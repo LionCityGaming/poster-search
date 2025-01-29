@@ -52,7 +52,7 @@ cd poster-search
 
 2. Make the script executable:
 ```bash
-chmod +x search.sh
+chmod +x poster-search.sh
 ```
 
 ## Configuration
@@ -83,7 +83,7 @@ Modify this path according to your DAPS installation directory if different.
 ### Filter by Format
 ```bash
 # Show all PNG files
-./sposter-search.sh -f png
+./poster-search.sh -f png
 
 # Show all JPG files
 ./poster-search.sh -f jpg
