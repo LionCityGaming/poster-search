@@ -91,14 +91,14 @@ Modify this path according to your DAPS installation directory if different.
 # Show all PNG files
 ./poster-search.sh -f png
 
-![WindowsTerminal_4cqr5BcaD2](https://github.com/user-attachments/assets/2303017a-bc4a-4db1-b274-319711e9f182)
-
 # Show all JPG files
 ./poster-search.sh -f jpg
 
 # Search PNGs with term
 ./poster-search.sh -f png searchterm
 ```
+
+![WindowsTerminal_4cqr5BcaD2](https://github.com/user-attachments/assets/2303017a-bc4a-4db1-b274-319711e9f182)
 
 ### Filter by Username
 ```bash
