@@ -55,11 +55,6 @@ cd poster-search
 chmod +x search.sh
 ```
 
-3. (Optional) Create a symbolic link to make it available system-wide:
-```bash
-sudo ln -s "$(pwd)/search.sh" /usr/local/bin/imgsearch
-```
-
 ## Configuration
 
 The script uses two main configuration arrays:
