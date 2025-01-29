@@ -72,43 +72,43 @@ Modify this path according to your DAPS installation directory if different.
 
 ### Basic Search
 ```bash
-./search.sh [search_term]
+./poster-search.sh [search_term]
 ```
 
 ### List All Users
 ```bash
-./search.sh -l
+./poster-search.sh -l
 ```
 
 ### Filter by Format
 ```bash
 # Show all PNG files
-./search.sh -f png
+./sposter-search.sh -f png
 
 # Show all JPG files
-./search.sh -f jpg
+./poster-search.sh -f jpg
 
 # Search PNGs with term
-./search.sh -f png searchterm
+./poster-search.sh -f png searchterm
 ```
 
 ### Filter by Username
 ```bash
-./search.sh -u username searchterm
+./poster-search.sh -u username searchterm
 ```
 
 ### Sort Options
 ```bash
-./search.sh -s priority searchterm    # Sort by predefined priority (default)
-./search.sh -s username searchterm    # Sort alphabetically by username
-./search.sh -s filename searchterm    # Sort alphabetically by filename
-./search.sh -s year-asc searchterm   # Sort by year, oldest first
-./search.sh -s year-desc searchterm  # Sort by year, newest first
+./poster-search.sh -s priority searchterm    # Sort by predefined priority (default)
+./poster-search.sh -s username searchterm    # Sort alphabetically by username
+./poster-search.sh -s filename searchterm    # Sort alphabetically by filename
+./poster-search.sh -s year-asc searchterm   # Sort by year, oldest first
+./poster-search.sh -s year-desc searchterm  # Sort by year, newest first
 ```
 
 ### Combining Options
 ```bash
-./search.sh -u username -f png -s priority searchterm
+./poster-search.sh -u username -f png -s priority searchterm
 ```
 
 ## Command Line Options
