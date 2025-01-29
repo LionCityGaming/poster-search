@@ -75,15 +75,23 @@ Modify this path according to your DAPS installation directory if different.
 ./poster-search.sh [search_term]
 ```
 
+![WindowsTerminal_SbSkiJ1JIQ](https://github.com/user-attachments/assets/51047342-f6ab-4948-acba-7ca440ddc475)
+
+
 ### List All Users
 ```bash
 ./poster-search.sh -l
 ```
 
+![WindowsTerminal_BummCFNLZ1](https://github.com/user-attachments/assets/66c96121-ebc9-4cd2-bee3-f6837771a0ad)
+
+
 ### Filter by Format
 ```bash
 # Show all PNG files
 ./poster-search.sh -f png
+
+![WindowsTerminal_4cqr5BcaD2](https://github.com/user-attachments/assets/2303017a-bc4a-4db1-b274-319711e9f182)
 
 # Show all JPG files
 ./poster-search.sh -f jpg
