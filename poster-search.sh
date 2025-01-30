@@ -1,9 +1,14 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Version information
-readonly VERSION="0.1.1"  # Major.Minor.Patch
+readonly VERSION="0.1.2"  # Major.Minor.Patch
 
 # Changelog:
+# v0.1.2 - Changed to flexible directory structure
+#        - Now uses parent directory of image as username
+#        - Added recursive directory searching
+#        - Removed fixed path position dependencies
+#
 # v0.1.1 - Added priority-based sorting (now default)
 #        - Added PNG file support to search results
 #        - Added file format filter option (-f)
@@ -178,15 +183,9 @@ display_results() {
     local sort_by=$5
     
     while IFS='|' read -r year idx owner filename fullpath; do
-        if [ "$sort_by" = "script" ]; then
-            local color_code=${colors[$owner]:-"0"}
-            local highlighted_filename=$(echo "$filename" | sed -E "s/($search_term)/\x1b[7;33m\1\x1b[0m/gi")
-            printf "%3d. \e[${color_code}m%-${max_length}s\e[0m%1s%s\n" "$count" "$owner" "" "$highlighted_filename"
-        else
-            local color_code=${colors[$owner]:-"0"}
-            local highlighted_filename=$(echo "$filename" | sed -E "s/($search_term)/\x1b[7;33m\1\x1b[0m/gi")
-            printf "%3d. \e[${color_code}m%-${max_length}s\e[0m%1s%s\n" "$count" "$owner" "" "$highlighted_filename"
-        fi
+        local color_code=${colors[$owner]:-"0"}
+        local highlighted_filename=$(echo "$filename" | sed -E "s/($search_term)/\x1b[7;33m\1\x1b[0m/gi")
+        printf "%3d. \e[${color_code}m%-${max_length}s\e[0m%1s%s\n" "$count" "$owner" "" "$highlighted_filename"
         ((count++))
     done < <(eval "$sort_cmd $input_file")
 }
@@ -243,7 +242,7 @@ main() {
     local temp_file=$(mktemp)
     
     # Build and execute find command
-    local find_cmd="find \"$search_path\" -type f "
+    local find_cmd="find \"$search_path\" -mindepth 1 -type f "
     
     # Add extension filter
     case "$format" in
@@ -267,7 +266,7 @@ main() {
     if [ -n "$username" ]; then
         local username_lower=$(echo "$username" | tr '[:upper:]' '[:lower:]')
         find_cmd="$find_cmd | while IFS= read -r line; do
-            dir_name=\$(echo \"\$line\" | awk -F'/' '{print \$8}')
+            dir_name=$(dirname \"$line\" | xargs basename)
             if echo \"\$dir_name\" | tr '[:upper:]' '[:lower:]' | grep -q \"$username_lower\"; then
                 echo \"\$line\"
             fi
@@ -276,8 +275,9 @@ main() {
     
     # Process files and extract information
     while IFS= read -r file; do
-        local owner=$(echo "$file" | awk -F'/' '{print $8}')
-        local filename=$(echo "$file" | awk -F'/' '{print $9}')
+        local filename=$(basename "$file")
+        local parent_dir=$(dirname "$file")
+        local owner=$(basename "$parent_dir")
         local year="9999"
         
         if [[ $file =~ \(([0-9]{4})\) ]]; then
