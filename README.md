@@ -22,12 +22,23 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 - Color-coded output for different users
 - User-specific filtering
 - Support for JPG, JPEG, and PNG files
+- Multiple search paths support
+- Enhanced search performance
 
 ## Version History
 
-**Current Version:** 0.1.1
+**Current Version:** 0.2.0
 
-Changes from 0.1.0:
+Changes in 0.2.0:
+- Complete rebuild with simplified codebase
+- Multiple search paths support
+- Optimized search performance
+- Simplified user configuration
+- Same feature set with more maintainable code
+- Improved error handling
+- Better handling of non-existent paths
+
+Previous Changes (0.1.1):
 - Added priority-based sorting (now default)
 - Added PNG file support to search results
 - Added file format filter option (-f)
@@ -57,16 +68,21 @@ chmod +x poster-search.sh
 
 ## Configuration
 
-The script uses two main configuration arrays:
-- `user_order`: Defines the priority order of users in your DAPS community
-- `colors`: Maps users to their display colors for easy visual identification
-
-The default search path is configured for a standard DAPS installation:
+The script now uses a simplified configuration system:
 ```bash
-readonly SEARCH_PATH="/volume2/docker/dockge/stacks/daps/posters"
-```
+# Search paths - Add or modify paths as needed
+declare -a SEARCH_PATHS=(
+    "/volume2/docker/dockge/stacks/daps/posters"    # Main DAPS posters directory
+    # Add additional paths here
+)
 
-Modify this path according to your DAPS installation directory if different.
+# User priority and color mapping in a single array
+declare -a USERS=(
+    "LionCityGaming:1;31"  # Light Red
+    "IamSpartacus:1;32"    # Light Green
+    # ...more users...
+)
+```
 
 ## Usage
 
@@ -158,7 +174,16 @@ The default search path is set to the standard DAPS posters directory but can be
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Related Links
+
+- [DAPS](https://github.com/Drazzilb08/daps) - Docker Automated Plex Synchronization
+- [DAPS-UI](https://github.com/zarskie/daps-ui) - Web interface for DAPS
+- [DAPS-UI Wiki](https://github.com/zarskie/daps-ui/wiki) - Documentation for DAPS-UI
+- [DAPS Install Guide](https://github.com/Drazzilb08/daps/blob/main/docs/install.md) - Official DAPS installation guide
+- [DAPS Discord](https://discord.gg/FT6wcxqyZ5) - Official DAPS Discord community
+
 ## Acknowledgments
 
 - Users who contributed to feature requests and testing
 - Inspiration from similar image organization tools
+- DAPS community for feedback and testing
