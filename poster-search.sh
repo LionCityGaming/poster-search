@@ -267,7 +267,7 @@ main() {
     if [ -n "$username" ]; then
         local username_lower=$(echo "$username" | tr '[:upper:]' '[:lower:]')
         find_cmd="$find_cmd | while IFS= read -r line; do
-            dir_name=\$(echo \"\$line\" | awk -F'/' '{print \$8}')
+            dir_name=\$(echo \"\$line\" | awk -F'/' '{print \$(NF-1)}')
             if echo \"\$dir_name\" | tr '[:upper:]' '[:lower:]' | grep -q \"$username_lower\"; then
                 echo \"\$line\"
             fi
@@ -276,8 +276,8 @@ main() {
     
     # Process files and extract information
     while IFS= read -r file; do
-        local owner=$(echo "$file" | awk -F'/' '{print $8}')
-        local filename=$(echo "$file" | awk -F'/' '{print $9}')
+        local owner=$(echo "$file" | awk -F'/' '{print $(NF-1)}')
+        local filename=$(echo "$file" | awk -F'/' '{print $NF}')
         local year="9999"
         
         if [[ $file =~ \(([0-9]{4})\) ]]; then
