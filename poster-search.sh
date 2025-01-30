@@ -1,9 +1,17 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 # Version information
-readonly VERSION="0.1.1"  # Major.Minor.Patch
+readonly VERSION="0.1.3"  # Major.Minor.Patch
 
 # Changelog:
+# v0.1.3 - Added support for multiple search paths
+#        - Search paths now defined in array at top of script
+#
+# v0.1.2 - Changed to flexible directory structure
+#        - Now uses parent directory of image as username
+#        - Added recursive directory searching
+#        - Removed fixed path position dependencies
+#
 # v0.1.1 - Added priority-based sorting (now default)
 #        - Added PNG file support to search results
 #        - Added file format filter option (-f)
@@ -12,7 +20,11 @@ readonly VERSION="0.1.1"  # Major.Minor.Patch
 #        - Changed default sort from year-desc to priority order
 #        - Modified -l list to show users in priority order (previously alphabetical)
 
-readonly SEARCH_PATH="/volume2/docker/dockge/stacks/daps/posters"  # Default search path
+# Search paths
+declare -a SEARCH_PATHS=(
+    "/volume2/docker/dockge/stacks/daps/posters"    # Default DAPS posters directory
+    # Add more paths as needed
+)
 
 # User priority order and color codes
 declare -a user_order=(
@@ -178,15 +190,9 @@ display_results() {
     local sort_by=$5
     
     while IFS='|' read -r year idx owner filename fullpath; do
-        if [ "$sort_by" = "script" ]; then
-            local color_code=${colors[$owner]:-"0"}
-            local highlighted_filename=$(echo "$filename" | sed -E "s/($search_term)/\x1b[7;33m\1\x1b[0m/gi")
-            printf "%3d. \e[${color_code}m%-${max_length}s\e[0m%1s%s\n" "$count" "$owner" "" "$highlighted_filename"
-        else
-            local color_code=${colors[$owner]:-"0"}
-            local highlighted_filename=$(echo "$filename" | sed -E "s/($search_term)/\x1b[7;33m\1\x1b[0m/gi")
-            printf "%3d. \e[${color_code}m%-${max_length}s\e[0m%1s%s\n" "$count" "$owner" "" "$highlighted_filename"
-        fi
+        local color_code=${colors[$owner]:-"0"}
+        local highlighted_filename=$(echo "$filename" | sed -E "s/($search_term)/\x1b[7;33m\1\x1b[0m/gi")
+        printf "%3d. \e[${color_code}m%-${max_length}s\e[0m%1s%s\n" "$count" "$owner" "" "$highlighted_filename"
         ((count++))
     done < <(eval "$sort_cmd $input_file")
 }
@@ -242,32 +248,58 @@ main() {
     local search_term="$*"
     local temp_file=$(mktemp)
     
-    # Build and execute find command
-    local find_cmd="find \"$search_path\" -type f "
-    
-    # Add extension filter
-    case "$format" in
-        "jpg")  find_cmd+=" -iname \"*.jpg\"" ;;
-        "jpeg") find_cmd+=" -iname \"*.jpeg\"" ;;
-        "png")  find_cmd+=" -iname \"*.png\"" ;;
-        "all")  find_cmd+=" \( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" \)" ;;
-    esac
-
-    # Add search term if provided
-    if [ $# -gt 0 ]; then
-        local term_cmd
+    # Build and execute find command for each search path
+    for search_path in "${SEARCH_PATHS[@]}"; do
+        local find_cmd="find \"$search_path\" -mindepth 1 -type f "
+        
+        # Add extension filter
         case "$format" in
-            "jpg")  term_cmd=" -iname \"*${search_term}*.jpg\"" ;;
-            "jpeg") term_cmd=" -iname \"*${search_term}*.jpeg\"" ;;
-            "png")  term_cmd=" -iname \"*${search_term}*.png\"" ;;
-            "all")  term_cmd=" \( -iname \"*${search_term}*.jpg\" -o -iname \"*${search_term}*.jpeg\" -o -iname \"*${search_term}*.png\" \)" ;;
+            "jpg")  find_cmd+=" -iname \"*.jpg\"" ;;
+            "jpeg") find_cmd+=" -iname \"*.jpeg\"" ;;
+            "png")  find_cmd+=" -iname \"*.png\"" ;;
+            "all")  find_cmd+=" \( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" \)" ;;
         esac
-        find_cmd="$find_cmd -a $term_cmd"
-    fi
+
+        # Add search term if provided
+        if [ $# -gt 0 ]; then
+            local term_cmd
+            case "$format" in
+                "jpg")  term_cmd=" -iname \"*${search_term}*.jpg\"" ;;
+                "jpeg") term_cmd=" -iname \"*${search_term}*.jpeg\"" ;;
+                "png")  term_cmd=" -iname \"*${search_term}*.png\"" ;;
+                "all")  term_cmd=" \( -iname \"*${search_term}*.jpg\" -o -iname \"*${search_term}*.jpeg\" -o -iname \"*${search_term}*.png\" \)" ;;
+            esac
+            find_cmd="$find_cmd -a $term_cmd"
+        fi
+
+        if [ -n "$username" ]; then
+            local username_lower=$(echo "$username" | tr '[:upper:]' '[:lower:]')
+            find_cmd="$find_cmd | while IFS= read -r line; do
+                dir_name=$(dirname \"$line\" | xargs basename)
+                if echo \"\$dir_name\" | tr '[:upper:]' '[:lower:]' | grep -q \"$username_lower\"; then
+                    echo \"\$line\"
+                fi
+            done"
+        fi
+        
+        # Process files and extract information from this path
+        while IFS= read -r file; do
+            local filename=$(basename "$file")
+            local parent_dir=$(dirname "$file")
+            local owner=$(basename "$parent_dir")
+            local year="9999"
+            
+            if [[ $file =~ \(([0-9]{4})\) ]]; then
+                year="${BASH_REMATCH[1]}"
+            fi
+            
+            echo "$year|$owner|$filename|$file" >> "$temp_file"
+        done < <(eval "$find_cmd")
+    done
     if [ -n "$username" ]; then
         local username_lower=$(echo "$username" | tr '[:upper:]' '[:lower:]')
         find_cmd="$find_cmd | while IFS= read -r line; do
-            dir_name=\$(echo \"\$line\" | awk -F'/' '{print \$(NF-1)}')
+            dir_name=$(dirname \"$line\" | xargs basename)
             if echo \"\$dir_name\" | tr '[:upper:]' '[:lower:]' | grep -q \"$username_lower\"; then
                 echo \"\$line\"
             fi
@@ -276,8 +308,9 @@ main() {
     
     # Process files and extract information
     while IFS= read -r file; do
-        local owner=$(echo "$file" | awk -F'/' '{print $(NF-1)}')
-        local filename=$(echo "$file" | awk -F'/' '{print $NF}')
+        local filename=$(basename "$file")
+        local parent_dir=$(dirname "$file")
+        local owner=$(basename "$parent_dir")
         local year="9999"
         
         if [[ $file =~ \(([0-9]{4})\) ]]; then
