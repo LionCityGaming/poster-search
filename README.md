@@ -8,7 +8,8 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - Quick searching through user-synchronized poster directories
 - Priority-based sorting of trusted users' contributions
 - Format-specific filtering
-- Color-coded output for easy user identification
+- Adaptive color-coded output with terminal compatibility
+- Automatic terminal capability detection
 
 For information about setting up DAPS and DAPS-UI, please refer to:
 - [DAPS Documentation](https://github.com/Drazzilb08/daps)
@@ -19,7 +20,8 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 - Search for images by filename across multiple user directories
 - Filter results by file format (JPG, JPEG, PNG)
 - Sort results by various criteria including custom priority order
-- Color-coded output for different users
+- Smart color-coded output with terminal compatibility detection
+- Advanced and basic color support with automatic fallback
 - User-specific filtering
 - Support for JPG, JPEG, and PNG files
 - Multiple search paths support
@@ -27,7 +29,14 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 
 ## Version History
 
-**Current Version:** 0.2.0
+**Current Version:** 0.2.1
+
+Changes in 0.2.1:
+- Updated color scheme for better terminal compatibility
+- Added advanced and basic color support with fallbacks
+- Automatic terminal capability detection
+- Smart color mode selection based on terminal support
+- Enhanced search term highlighting for supported terminals
 
 Changes in 0.2.0:
 - Complete rebuild with simplified codebase
@@ -52,6 +61,7 @@ Previous Changes (0.1.1):
 - A working [DAPS](https://github.com/Drazzilb08/daps) installation
 - Access to the DAPS posters directory
 - Bash shell (version 4.0 or higher)
+- Terminal with basic color support (enhanced features available for terminals with advanced color support)
 
 ## Installation
 
@@ -68,7 +78,7 @@ chmod +x poster-search.sh
 
 ## Configuration
 
-The script now uses a simplified configuration system:
+The script now uses an enhanced configuration system with support for both advanced and basic terminal colors:
 ```bash
 # Search paths - Add or modify paths as needed
 declare -a SEARCH_PATHS=(
@@ -76,13 +86,18 @@ declare -a SEARCH_PATHS=(
     # Add additional paths here
 )
 
-# User priority and color mapping in a single array
+# User priority and color mapping with fallback support
 declare -a USERS=(
-    "LionCityGaming:1;31"  # Light Red
-    "IamSpartacus:1;32"    # Light Green
-    # ...more users...
+    "LionCityGaming:1;31:31"      # Light Red : Red
+    "IamSpartacus:1;32:32"        # Light Green : Green
+    # Format: "username:advanced_color:basic_color"
 )
 ```
+
+The new color system automatically detects your terminal's capabilities and provides:
+- Advanced colors for modern terminals
+- Basic colors for standard terminals
+- Fallback to no colors for limited terminals
 
 ## Usage
 
@@ -135,6 +150,19 @@ declare -a USERS=(
 ./poster-search.sh -u username -f png -s priority searchterm
 ```
 
+### Debug and Verbose Output
+```bash
+# Run with verbose output
+./poster-search.sh -v searchterm
+
+# Run with debug output
+./poster-search.sh -d searchterm
+
+# Can be combined with other options
+./poster-search.sh -v -u username -f png searchterm
+./poster-search.sh -d -u username -f png searchterm
+```
+
 ## Command Line Options
 
 | Option | Description |
@@ -144,6 +172,17 @@ declare -a USERS=(
 | -u username | Filter results by username (case insensitive, partial match) |
 | -f format | Filter by file format (jpg, jpeg, png, or all) |
 | -s sort_option | Sort results (priority, username, filename, year-asc, year-desc) |
+| -v | Enable verbose output (shows additional processing information) |
+| -d | Enable debug mode (shows additional debugging information) |
+
+## Terminal Compatibility
+
+The script now includes smart terminal detection and will automatically:
+1. Use advanced colors (including light/dark variations) on fully-capable terminals
+2. Fall back to basic ANSI colors on terminals with standard color support
+3. Disable colors completely on terminals without color support
+
+This ensures optimal visibility and compatibility across different terminal emulators and SSH sessions.
 
 ## Directory Structure
 
