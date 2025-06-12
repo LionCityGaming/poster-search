@@ -8,6 +8,7 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - Quick searching through user-synchronized poster directories
 - Priority-based sorting of trusted users' contributions
 - Format-specific filtering
+- Collection overview with file count per user
 - Adaptive color-coded output with terminal compatibility
 - Automatic terminal capability detection
 
@@ -18,6 +19,7 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 ## Features
 
 - Search for images by filename across multiple user directories
+- **View file count statistics per user with collection overview**
 - Filter results by file format (JPG, JPEG, PNG)
 - Sort results by various criteria including custom priority order
 - Smart color-coded output with terminal compatibility detection
@@ -26,10 +28,18 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 - Support for JPG, JPEG, and PNG files
 - Multiple search paths support
 - Enhanced search performance
+- **Total collection statistics with format-specific breakdowns**
 
 ## Version History
 
-**Current Version:** 0.2.1
+**Current Version:** 0.3.0
+
+Changes in 0.3.0:
+- **Added file count function (-c flag) to display collection statistics**
+- **Shows number of files per user directory with total count**
+- **Format-specific counting (works with -f flag for targeted statistics)**
+- **Color-coded user display matching search results**
+- **Priority-ordered statistics display**
 
 Changes in 0.2.1:
 - Updated color scheme for better terminal compatibility
@@ -88,13 +98,13 @@ declare -a SEARCH_PATHS=(
 
 # User priority and color mapping with fallback support
 declare -a USERS=(
-    "LionCityGaming:1;31:31"      # Light Red : Red
-    "IamSpartacus:1;32:32"        # Light Green : Green
-    # Format: "username:advanced_color:basic_color"
+    "LionCityGaming:1;31"         # Light Red
+    "IamSpartacus:1;32"           # Light Green
+    # Format: "username:color_code"
 )
 ```
 
-The new color system automatically detects your terminal's capabilities and provides:
+The color system automatically detects your terminal's capabilities and provides:
 - Advanced colors for modern terminals
 - Basic colors for standard terminals
 - Fallback to no colors for limited terminals
@@ -106,16 +116,33 @@ The new color system automatically detects your terminal's capabilities and prov
 ./poster-search.sh [search_term]
 ```
 
-![WindowsTerminal_SbSkiJ1JIQ](https://github.com/user-attachments/assets/51047342-f6ab-4948-acba-7ca440ddc475)
+### Collection Statistics
+```bash
+# Show file count for all users
+./poster-search.sh -c
 
+# Show file count for specific format
+./poster-search.sh -c -f jpg
+./poster-search.sh -c -f png
+```
+
+Example output:
+```
+File count per user:
+====================
+LionCityGaming     1,234 files
+IamSpartacus         892 files
+Drazzilb             567 files
+BZ                   445 files
+...
+====================
+Total files: 8,456
+```
 
 ### List All Users
 ```bash
 ./poster-search.sh -l
 ```
-
-![WindowsTerminal_BummCFNLZ1](https://github.com/user-attachments/assets/66c96121-ebc9-4cd2-bee3-f6837771a0ad)
-
 
 ### Filter by Format
 ```bash
@@ -169,6 +196,7 @@ The new color system automatically detects your terminal's capabilities and prov
 |--------|-------------|
 | -h | Show help text |
 | -l | List all synced drives |
+| **-c** | **Show file count per user (collection statistics)** |
 | -u username | Filter results by username (case insensitive, partial match) |
 | -f format | Filter by file format (jpg, jpeg, png, or all) |
 | -s sort_option | Sort results (priority, username, filename, year-asc, year-desc) |
@@ -183,6 +211,20 @@ The script now includes smart terminal detection and will automatically:
 3. Disable colors completely on terminals without color support
 
 This ensures optimal visibility and compatibility across different terminal emulators and SSH sessions.
+
+## Collection Management
+
+The new file count feature provides valuable insights for collection management:
+
+- **Quick overview**: See which users contribute the most content
+- **Format analysis**: Identify format distribution across your collection
+- **Storage planning**: Understand collection size for backup and storage decisions
+- **User activity**: Monitor active contributors to your poster collection
+
+Use cases:
+- `./poster-search.sh -c` - Get overall collection statistics
+- `./poster-search.sh -c -f jpg` - See JPG distribution across users
+- `./poster-search.sh -c -f png` - Analyze PNG collection by user
 
 ## Directory Structure
 
