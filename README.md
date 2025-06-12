@@ -9,6 +9,7 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - Priority-based sorting of trusted users' contributions
 - Format-specific filtering
 - Collection overview with file count per user
+- **Advanced sorting options for collection statistics**
 - Adaptive color-coded output with terminal compatibility
 - Automatic terminal capability detection
 
@@ -19,9 +20,10 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 ## Features
 
 - Search for images by filename across multiple user directories
-- **View file count statistics per user with collection overview**
+- **View file count statistics per user with flexible sorting options**
 - Filter results by file format (JPG, JPEG, PNG)
 - Sort results by various criteria including custom priority order
+- **Sort collection statistics by file count, username, or priority**
 - Smart color-coded output with terminal compatibility detection
 - Advanced and basic color support with automatic fallback
 - User-specific filtering
@@ -32,7 +34,14 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 
 ## Version History
 
-**Current Version:** 0.3.0
+**Current Version:** 0.3.1
+
+Changes in 0.3.1:
+- **Fixed total file count calculation** (was showing 0 due to subshell variable scoping issue)
+- **Added sorting options for file count display (-c flag)**
+- **New sort options: count-asc, count-desc for sorting by file count**
+- **Enhanced -s argument to work intelligently with both search and count modes**
+- Improved collection analysis capabilities with flexible sorting
 
 Changes in 0.3.0:
 - **Added file count function (-c flag) to display collection statistics**
@@ -118,12 +127,21 @@ The color system automatically detects your terminal's capabilities and provides
 
 ### Collection Statistics
 ```bash
-# Show file count for all users
+# Show file count for all users (sorted by priority - default)
 ./poster-search.sh -c
 
-# Show file count for specific format
-./poster-search.sh -c -f jpg
-./poster-search.sh -c -f png
+# Show file count sorted by highest count first
+./poster-search.sh -c -s count-desc
+
+# Show file count sorted by lowest count first
+./poster-search.sh -c -s count-asc
+
+# Show file count sorted alphabetically by username
+./poster-search.sh -c -s username
+
+# Show file count for specific format with sorting
+./poster-search.sh -c -f jpg -s count-desc
+./poster-search.sh -c -f png -s username
 ```
 
 Example output:
@@ -164,6 +182,8 @@ Total files: 8,456
 ```
 
 ### Sort Options
+
+#### For Search Results:
 ```bash
 ./poster-search.sh -s priority searchterm    # Sort by predefined priority (default)
 ./poster-search.sh -s username searchterm    # Sort alphabetically by username
@@ -172,9 +192,18 @@ Total files: 8,456
 ./poster-search.sh -s year-desc searchterm  # Sort by year, newest first
 ```
 
+#### For Collection Statistics (-c flag):
+```bash
+./poster-search.sh -c -s priority      # Sort by user priority (default)
+./poster-search.sh -c -s username      # Sort alphabetically by username
+./poster-search.sh -c -s count-asc     # Sort by file count, lowest first
+./poster-search.sh -c -s count-desc    # Sort by file count, highest first
+```
+
 ### Combining Options
 ```bash
 ./poster-search.sh -u username -f png -s priority searchterm
+./poster-search.sh -c -f jpg -s count-desc  # Show JPG counts, highest first
 ```
 
 ### Debug and Verbose Output
@@ -187,7 +216,7 @@ Total files: 8,456
 
 # Can be combined with other options
 ./poster-search.sh -v -u username -f png searchterm
-./poster-search.sh -d -u username -f png searchterm
+./poster-search.sh -d -c -s count-desc
 ```
 
 ## Command Line Options
@@ -199,7 +228,7 @@ Total files: 8,456
 | **-c** | **Show file count per user (collection statistics)** |
 | -u username | Filter results by username (case insensitive, partial match) |
 | -f format | Filter by file format (jpg, jpeg, png, or all) |
-| -s sort_option | Sort results (priority, username, filename, year-asc, year-desc) |
+| **-s sort_option** | **Sort results - Search: (priority, username, filename, year-asc, year-desc) / Count: (priority, username, count-asc, count-desc)** |
 | -v | Enable verbose output (shows additional processing information) |
 | -d | Enable debug mode (shows additional debugging information) |
 
@@ -214,17 +243,33 @@ This ensures optimal visibility and compatibility across different terminal emul
 
 ## Collection Management
 
-The new file count feature provides valuable insights for collection management:
+The enhanced file count feature provides valuable insights for collection management:
 
 - **Quick overview**: See which users contribute the most content
 - **Format analysis**: Identify format distribution across your collection
 - **Storage planning**: Understand collection size for backup and storage decisions
 - **User activity**: Monitor active contributors to your poster collection
+- **Performance analysis**: Identify users with the largest collections for optimization
+
+### Advanced Collection Analysis Examples:
+```bash
+# Find users with the most content
+./poster-search.sh -c -s count-desc
+
+# Analyze PNG distribution
+./poster-search.sh -c -f png -s count-desc
+
+# Get alphabetical user overview
+./poster-search.sh -c -s username
+
+# Find users with minimal collections
+./poster-search.sh -c -s count-asc
+```
 
 Use cases:
 - `./poster-search.sh -c` - Get overall collection statistics
-- `./poster-search.sh -c -f jpg` - See JPG distribution across users
-- `./poster-search.sh -c -f png` - Analyze PNG collection by user
+- `./poster-search.sh -c -f jpg -s count-desc` - See top JPG contributors
+- `./poster-search.sh -c -s count-asc` - Identify users who might need more content
 
 ## Directory Structure
 
