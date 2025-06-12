@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.3.0"  # Major.Minor.Patch
+readonly VERSION="0.3.1"  # Major.Minor.Patch
 
 # Changelog:
+# v0.3.1 - Fixed total file count calculation (was showing 0 due to subshell issue)
+#        - Added sorting options for file count display (-c flag)
+#        - New sort options: count-asc, count-desc for sorting by file count
+#        - Enhanced -s argument to work with both search and count modes
 # v0.3.0 - Added file count function (-c flag) to show files per user
 #        - Added total file count display
 # v0.2.1 - Added tput detection and color fallback
@@ -27,7 +31,7 @@ fi
 
 # Search paths - Add or modify paths as needed
 declare -a SEARCH_PATHS=(
-    "[CHANGE THIS!]"    # Main DAPS posters directory
+    "/etc/komodo/stacks/daps-ui/daps-ui/posters"    # Main DAPS posters directory
     # Add additional paths here
 )
 
@@ -92,6 +96,7 @@ Options:
     -u user     Filter by username
     -f format   Filter by format: jpg, jpeg, png, or all (default: all)
     -s sort     Sort by: priority (default), username, filename, year-asc, year-desc
+                For -c flag: priority (default), username, count-asc, count-desc
     -v          Verbose output (shows full path)
     -d          Debug mode (shows script operations)
 
@@ -102,6 +107,7 @@ Examples:
     $0 -s year-desc movie       # Search for "movie", newest first
     $0 -c                       # Show file count per user
     $0 -c -f jpg                # Show JPG file count per user
+    $0 -c -s count-desc         # Show file count per user, highest count first
 EOF
 }
 
@@ -122,10 +128,10 @@ list_users() {
 # Show file count per user
 show_file_counts() {
     local format="$1"
+    local sort_by="$2"
     local temp_file=$(mktemp)
-    local total_files=0
     
-    [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files with format: $format" >&2
+    [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files with format: $format, sort: $sort_by" >&2
 
     echo "File count per user:"
     echo "===================="
@@ -172,8 +178,24 @@ show_file_counts() {
         done
     done
 
-    # Sort by priority and display
-    sort -t'|' -k1,1n "$temp_file" | while IFS='|' read -r priority user count; do
+    # Calculate total files before displaying
+    local total_files=$(awk -F'|' '{sum += $3} END {print sum}' "$temp_file")
+    
+    # Sort based on the sort_by parameter
+    local sort_cmd
+    case "$sort_by" in
+        "username")   sort_cmd="sort -t'|' -k2,2"
+                     [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by username" >&2 ;;
+        "count-asc")  sort_cmd="sort -t'|' -k3,3n"
+                     [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by count (ascending)" >&2 ;;
+        "count-desc") sort_cmd="sort -t'|' -k3,3nr"
+                     [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by count (descending)" >&2 ;;
+        *)           sort_cmd="sort -t'|' -k1,1n"
+                     [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by priority (default)" >&2 ;;
+    esac
+    
+    # Sort and display
+    eval "$sort_cmd $temp_file" | while IFS='|' read -r priority user count; do
         # Find user's color
         local color="0"
         for user_data in "${USERS[@]}"; do
@@ -191,8 +213,6 @@ show_file_counts() {
             printf " (.%s)" "$format"
         fi
         echo
-        
-        total_files=$((total_files + count))
     done
     
     echo "===================="
@@ -356,7 +376,7 @@ main() {
                    *) echo "Invalid format. Use: jpg, jpeg, png, or all" >&2; exit 1 ;;
                esac ;;
             s) case "$OPTARG" in
-                   username|filename|year-asc|year-desc|priority) sort_by="$OPTARG" ;;
+                   username|filename|year-asc|year-desc|priority|count-asc|count-desc) sort_by="$OPTARG" ;;
                    *) echo "Invalid sort option" >&2; exit 1 ;;
                esac ;;
             d) DEBUG=1 ;;
@@ -380,7 +400,7 @@ main() {
 
     # Handle file count display
     if [ "$show_counts" -eq 1 ]; then
-        show_file_counts "$format"
+        show_file_counts "$format" "$sort_by"
         exit 0
     fi
 
