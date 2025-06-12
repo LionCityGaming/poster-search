@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.2.1"  # Major.Minor.Patch
+readonly VERSION="0.3.0"  # Major.Minor.Patch
 
 # Changelog:
+# v0.3.0 - Added file count function (-c flag) to show files per user
+#        - Added total file count display
 # v0.2.1 - Added tput detection and color fallback
 #        - Added verbose output mode (-v flag) for full paths
 # v0.2.0 - Complete rebuild with simplified codebase
@@ -25,33 +27,34 @@ fi
 
 # Search paths - Add or modify paths as needed
 declare -a SEARCH_PATHS=(
-    "/volume2/docker/dockge/stacks/daps/posters"    # Main DAPS posters directory
+    "[CHANGE THIS!]"    # Main DAPS posters directory
     # Add additional paths here
 )
 
-# User priority and color mapping
+# User priority and color mapping (in order of priority)
 declare -a USERS=(
     "LionCityGaming:1;31"  # Light Red
     "IamSpartacus:1;32"    # Light Green
     "Drazzilb:1;34"        # Light Blue
-    "BZ:1;33"              # Light Yellow
-    "dsaq:1;35"            # Light Magenta
+    "Darkkazul:1;35"       # Light Magenta
+    "dsaq:1;33"            # Light Yellow
     "solen:1;36"           # Light Cyan
-    "Quafley:0;32"         # Dark Green
+    "BZ:0;31"              # Dark Red
+    "chrisdc:0;32"         # Dark Green
+    "Quafley:0;33"         # Dark Yellow
     "sahara:0;34"          # Dark Blue
     "MajorGiant:0;35"      # Dark Magenta
-    "Stupifier:0;33"       # Dark Yellow
-    "Overbook874:0;36"     # Dark Cyan
-    "Mareau:95"            # Light Magenta
+    "Stupifier:0;36"       # Dark Cyan
+    "Overbook874:91"       # Light Red
+    "Mareau:92"            # Light Green
+    "Jpalenz77:93"         # Light Yellow
     "TokenMinal:94"        # Light Blue
-    "Kalyanrajnish:96"     # Light Cyan
-    "MiniMyself:92"        # Light Green
-    "TheOtherGuy:93"       # Light Yellow
-    "Reitenth:1;36"        # Light Cyan
-    "WenIsInMood:91"       # Light Red
-    "Jpalenz77:0;31"       # Dark Red
-    "chrisdc:1;35"         # Light Magenta
-    "zarox:0;33"           # Dark Yellow
+    "MiniMyself:95"        # Light Magenta
+    "zarox:96"             # Light Cyan
+    "dweagle79:1;91"       # Bright Light Red
+    "reitenth:1;92"        # Bright Light Green
+    "wesisinmood:1;93"     # Bright Light Yellow
+    "Kalyanrajnish:1;94"   # Bright Light Blue
 )
 
 # Color handling functions
@@ -80,11 +83,12 @@ show_help() {
     cat << EOF
 Poster Search Tool v${VERSION}
 
-Usage: $0 [-u username] [-s sort] [-f format] [-l] [-h] [search term]
+Usage: $0 [-u username] [-s sort] [-f format] [-l] [-c] [-h] [search term]
 
 Options:
     -h          Show this help text
     -l          List all users
+    -c          Show file count per user
     -u user     Filter by username
     -f format   Filter by format: jpg, jpeg, png, or all (default: all)
     -s sort     Sort by: priority (default), username, filename, year-asc, year-desc
@@ -96,6 +100,8 @@ Examples:
     $0 -f png logo              # Search for "logo" in PNG files only
     $0 -u LionCityGaming movie  # Search for "movie" in LionCityGaming's files
     $0 -s year-desc movie       # Search for "movie", newest first
+    $0 -c                       # Show file count per user
+    $0 -c -f jpg                # Show JPG file count per user
 EOF
 }
 
@@ -111,6 +117,92 @@ list_users() {
         echo
         ((count++))
     done
+}
+
+# Show file count per user
+show_file_counts() {
+    local format="$1"
+    local temp_file=$(mktemp)
+    local total_files=0
+    
+    [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files with format: $format" >&2
+
+    echo "File count per user:"
+    echo "===================="
+    
+    # Collect all user directories and their file counts
+    for path in "${SEARCH_PATHS[@]}"; do
+        [ ! -d "$path" ] && {
+            [ "$DEBUG" = "1" ] && echo "[DEBUG] Skipping non-existent path: $path" >&2
+            continue
+        }
+
+        [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files in path: $path" >&2
+
+        # Find all subdirectories (user folders)
+        find "$path" -mindepth 1 -maxdepth 1 -type d | while read -r user_dir; do
+            local user=$(basename "$user_dir")
+            local count=0
+            
+            # Build find command for counting files
+            local find_cmd="find \"$user_dir\" -type f"
+            
+            case "$format" in
+                "jpg")  find_cmd+=" -iname \"*.jpg\"" ;;
+                "jpeg") find_cmd+=" -iname \"*.jpeg\"" ;;
+                "png")  find_cmd+=" -iname \"*.png\"" ;;
+                "all")  find_cmd+=" \( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" \)" ;;
+            esac
+            
+            # Count files
+            count=$(eval "$find_cmd" 2>/dev/null | wc -l)
+            
+            [ "$DEBUG" = "1" ] && echo "[DEBUG] User: $user, Files: $count" >&2
+            
+            # Find user's priority for sorting
+            local priority=999
+            for i in "${!USERS[@]}"; do
+                if [[ "${USERS[$i]}" == "${user}:"* ]]; then
+                    priority=$i
+                    break
+                fi
+            done
+            
+            echo "$priority|$user|$count" >> "$temp_file"
+        done
+    done
+
+    # Sort by priority and display
+    sort -t'|' -k1,1n "$temp_file" | while IFS='|' read -r priority user count; do
+        # Find user's color
+        local color="0"
+        for user_data in "${USERS[@]}"; do
+            if [[ "$user_data" == "${user}:"* ]]; then
+                color="${user_data##*:}"
+                break
+            fi
+        done
+        
+        color_text "$color" "$user"
+        printf "   %5d files" "$count"
+        
+        # Add format indicator if not 'all'
+        if [ "$format" != "all" ]; then
+            printf " (.%s)" "$format"
+        fi
+        echo
+        
+        total_files=$((total_files + count))
+    done
+    
+    echo "===================="
+    printf "Total files: %d" "$total_files"
+    if [ "$format" != "all" ]; then
+        printf " (.%s)" "$format"
+    fi
+    echo
+    
+    rm -f "$temp_file"
 }
 
 # Search for files
@@ -250,12 +342,14 @@ main() {
     local format="all"
     local sort_by="priority"
     local verbose=0
+    local show_counts=0
 
     # Parse options
-    while getopts "hu:f:s:lvd" opt; do
+    while getopts "hu:f:s:lvdc" opt; do
         case $opt in
             h) show_help; exit 0 ;;
             l) list_users; exit 0 ;;
+            c) show_counts=1 ;;
             u) username="$OPTARG" ;;
             f) case "$OPTARG" in
                    jpg|jpeg|png|all) format="$OPTARG" ;;
@@ -282,6 +376,12 @@ main() {
     else
         HAS_COLORS=0
         [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output disabled" >&2
+    fi
+
+    # Handle file count display
+    if [ "$show_counts" -eq 1 ]; then
+        show_file_counts "$format"
+        exit 0
     fi
 
     # If no search term and no format specified, show usage
