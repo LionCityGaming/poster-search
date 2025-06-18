@@ -11,6 +11,7 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - **Collection overview with file count and disk usage per user**
 - **Advanced sorting options for collection statistics including disk usage**
 - **Interactive menu-driven interface for easy navigation**
+- **External configuration file support for portability**
 - Adaptive color-coded output with terminal compatibility
 - Automatic terminal capability detection
 
@@ -27,6 +28,8 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 - **Sort collection statistics by file count, disk usage, username, or priority**
 - **Human-readable size formatting (B, KB, MB, GB, TB)**
 - **Interactive mode with menu-driven interface for enhanced user experience**
+- **External configuration support via poster-search.env file**
+- **Configuration persistence across script updates**
 - Smart color-coded output with terminal compatibility detection
 - Advanced and basic color support with automatic fallback
 - User-specific filtering
@@ -37,7 +40,15 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 
 ## Version History
 
-**Current Version:** 0.5.0
+**Current Version:** 0.6.0
+
+Changes in 0.6.0:
+- **Added external poster-search.env configuration file support**
+- **Automatic poster-search.env.example file creation for easy setup**
+- **Configuration persistence across script updates**
+- **User-defined poster paths and user configurations**
+- **Safe configuration parsing with fallback to built-in defaults**
+- **Enhanced portability and maintainability**
 
 Changes in 0.5.0:
 - **Added interactive mode (-i flag) with menu-driven interface**
@@ -116,14 +127,45 @@ cd poster-search
 chmod +x poster-search.sh
 ```
 
+3. Set up configuration (optional but recommended):
+```bash
+# First run creates the example configuration
+./poster-search.sh -h
+
+# Copy and customize the configuration
+cp poster-search.env.example poster-search.env
+nano poster-search.env  # Edit paths and users as needed
+```
+
 ## Configuration
 
-The script now uses an enhanced configuration system with support for both advanced and basic terminal colors:
+The script supports both internal configuration and external configuration files for enhanced portability:
+
+### External Configuration (Recommended)
+Create a `poster-search.env` file in the same directory as the script:
+
+```bash
+# Poster directory paths (comma-separated)
+POSTER_PATHS="/etc/komodo/stacks/daps-ui/daps-ui/posters,/path/to/additional/posters"
+
+# User configuration (comma-separated user:color pairs)
+USERS_CONFIG="LionCityGaming:1;31,IamSpartacus:1;32,Drazzilb:1;34"
+```
+
+### Setup Instructions:
+1. **First run**: The script automatically creates `poster-search.env.example` 
+2. **Copy and customize**: `cp poster-search.env.example poster-search.env`
+3. **Modify paths**: Update `POSTER_PATHS` with your poster directories
+4. **Customize users**: Update `USERS_CONFIG` with your users and preferred colors
+5. **Update-safe**: Your configuration persists across script updates
+
+### Internal Configuration (Fallback)
+If no `poster-search.env` file exists, the script uses built-in defaults:
+
 ```bash
 # Search paths - Add or modify paths as needed
 declare -a SEARCH_PATHS=(
     "/etc/komodo/stacks/daps-ui/daps-ui/posters"    # Main DAPS posters directory
-    # Add additional paths here
 )
 
 # User priority and color mapping with fallback support
@@ -348,7 +390,11 @@ The script is designed to work with DAPS directory structure and expects images 
     └── image5.jpg
 ```
 
-The default search path is set to the standard DAPS posters directory but can be modified in the script configuration.
+**Configuration Options:**
+- **Built-in default**: `/etc/komodo/stacks/daps-ui/daps-ui/posters`
+- **External config**: Define custom paths in `poster-search.env`
+- **Multiple paths**: Support for searching across multiple poster directories
+- **Automatic detection**: Script creates example config on first run
 
 ## Contributing
 
