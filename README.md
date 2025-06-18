@@ -10,6 +10,7 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - Format-specific filtering
 - **Collection overview with file count and disk usage per user**
 - **Advanced sorting options for collection statistics including disk usage**
+- **Interactive menu-driven interface for easy navigation**
 - Adaptive color-coded output with terminal compatibility
 - Automatic terminal capability detection
 
@@ -25,6 +26,7 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 - Sort results by various criteria including custom priority order
 - **Sort collection statistics by file count, disk usage, username, or priority**
 - **Human-readable size formatting (B, KB, MB, GB, TB)**
+- **Interactive mode with menu-driven interface for enhanced user experience**
 - Smart color-coded output with terminal compatibility detection
 - Advanced and basic color support with automatic fallback
 - User-specific filtering
@@ -35,7 +37,16 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 
 ## Version History
 
-**Current Version:** 0.4.0
+**Current Version:** 0.5.0
+
+Changes in 0.5.0:
+- **Added interactive mode (-i flag) with menu-driven interface**
+- **Main menu with search, statistics, user listing, and advanced options**
+- **Advanced options submenu for configuring filters and settings**
+- **Collection statistics submenu with format and sorting options**
+- **Persistent settings within interactive session**
+- **Clear screen management and user-friendly navigation**
+- **Enhanced user experience with guided interface**
 
 Changes in 0.4.0:
 - **Added disk usage information to file count display (-c flag)**
@@ -130,6 +141,19 @@ The color system automatically detects your terminal's capabilities and provides
 
 ## Usage
 
+### Interactive Mode
+```bash
+# Start interactive mode with menu-driven interface
+./poster-search.sh -i
+```
+
+Interactive mode features:
+- **Main Menu**: Search, statistics, user listing, advanced options, and exit
+- **Collection Statistics Menu**: View file counts and disk usage with format and sorting options
+- **Advanced Options Menu**: Configure search filters, sorting, and display settings
+- **Persistent Settings**: All configured options remain active within the session
+- **User-Friendly Navigation**: Clear prompts and menu-driven interface
+
 ### Basic Search
 ```bash
 ./poster-search.sh [search_term]
@@ -222,6 +246,7 @@ Total Count: 8456 files [3.2 GB]
 ```bash
 ./poster-search.sh -u username -f png -s priority searchterm
 ./poster-search.sh -c -f jpg -s size-desc  # Show JPG counts and disk usage, largest first
+./poster-search.sh -i                      # Start interactive mode for guided interface
 ```
 
 ### Debug and Verbose Output
@@ -244,6 +269,7 @@ Total Count: 8456 files [3.2 GB]
 | -h | Show help text |
 | -l | List all synced drives |
 | **-c** | **Show file count and disk usage per user (collection statistics)** |
+| **-i** | **Interactive mode with menu-driven interface** |
 | -u username | Filter results by username (case insensitive, partial match) |
 | -f format | Filter by file format (jpg, jpeg, png, or all) |
 | **-s sort_option** | **Sort results - Search: (priority, username, filename, year-asc, year-desc) / Count: (priority, username, count-asc, count-desc, size-asc, size-desc)** |
@@ -292,6 +318,7 @@ The enhanced file count and disk usage feature provides valuable insights for co
 ```
 
 Use cases:
+- `./poster-search.sh -i` - Start interactive mode for guided navigation
 - `./poster-search.sh -c` - Get overall collection statistics with disk usage
 - `./poster-search.sh -c -f jpg -s size-desc` - See top JPG contributors by disk usage
 - `./poster-search.sh -c -s count-asc` - Identify users who might need more content
