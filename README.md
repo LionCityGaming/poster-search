@@ -453,3 +453,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Users who contributed to feature requests and testing
 - Inspiration from similar image organization tools
 - DAPS community for feedback and testing on the enhanced interactive interface
+
+
+keep all links, but rewrite this to include all the latest changes. only show latest changes in changelog
