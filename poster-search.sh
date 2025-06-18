@@ -148,22 +148,36 @@ show_ascii_title() {
         echo "╔═══════════════════════════╗"
         printf "\e[1;35m║ POSTER SEARCH TOOL v0.7.5 ║\e[0m\n"
         printf "\e[1;36m╚═══════════════════════════╝\e[0m\n"
-        printf "\e[1;34m┌──────────────────┐\e[0m\n"
-        printf "\e[1;34m│ Interactive Mode │\e[0m\n"
-        printf "\e[1;34m└──────────────────┘\e[0m\n"
+        printf "\e[1;34m┌───────────┐\e[0m\n"
+        printf "\e[1;34m│ Main Menu │\e[0m\n"
+        printf "\e[1;34m└───────────┘\e[0m\n"
     else
         echo ""
         echo "==========================="
         echo "POSTER  SEARCH  TOOL v0.7.5"
         echo "==========================="
-        echo "================"
-        echo "Interactive Mode"
-        echo "================"
+        echo "========="
+        echo "Main Menu"
+        echo "========="
         echo ""
     fi
 }
 
 # Individual visual menu headers for perfect alignment
+show_poster_search_header() {
+    if [ "$HAS_COLORS" -eq 1 ]; then
+        printf "\e[1;34m┌───────────────┐\e[0m\n"
+        printf "\e[1;34m│ Poster Search │\e[0m\n"
+        printf "\e[1;34m└───────────────┘\e[0m\n"
+    else
+        echo ""
+        echo "============="
+        echo "Poster Search"
+        echo "============="
+        echo ""
+    fi
+}
+
 show_collection_stats_header() {
     if [ "$HAS_COLORS" -eq 1 ]; then
         printf "\e[1;34m┌───────────────────────┐\e[0m\n"
@@ -579,7 +593,6 @@ interactive_mode() {
     
     while true; do
         if [ "$HAS_COLORS" -eq 1 ]; then
-            echo "Main Menu:"
             echo "  1) Search for posters"
             echo "  2) Show collection statistics"  
             echo "  3) List all synced drives"
@@ -604,6 +617,7 @@ interactive_mode() {
         
         case $choice in
             1)
+                show_poster_search_header
                 printf "Enter search term (or press Enter to cancel): "
                 read search_term
                 echo
