@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.7.3"  # Major.Minor.Patch
+readonly VERSION="0.7.5"  # Major.Minor.Patch
 
 # Changelog:
+# v0.7.5 - Restored -mindepth 1 in show_file_counts to prevent double-counting
+# v0.7.4 - Added macOS compatibility for show_file_counts using stat
 # v0.7.3 - Reverted show_file_counts to original for reliable size and count
 # v0.7.2 - Reintroduced color support for usernames from USERS_CONFIG
 # v0.7.1 - Fixed macOS compatibility, removed menu colors, moved user config to env
@@ -130,6 +132,15 @@ else
     [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output disabled" >&2
 fi
 
+# Detect operating system
+if [[ "$(uname -s)" == "Darwin" ]]; then
+    IS_MACOS=1
+    [ "$DEBUG" = "1" ] && echo "[DEBUG] macOS detected" >&2
+else
+    IS_MACOS=0
+    [ "$DEBUG" = "1" ] && echo "[DEBUG] Non-macOS system detected" >&2
+fi
+
 # Display ASCII title
 show_ascii_title() {
     if [ "$HAS_COLORS" -eq 1 ]; then
@@ -137,15 +148,14 @@ show_ascii_title() {
         echo "=============================================================================="
         echo "                         POSTER  SEARCH  TOOL                               "
         echo "=============================================================================="
-        printf "\e[0m\e[1;35m                              v0.7.3\e[0m\n"
+        printf "\e[0m\e[1;35m                              v0.7.5\e[0m\n"
         printf "\e[1;34m==============================================================================\e[0m\n"
     else
         echo ""
         echo "=============================================================================="
         echo "                         POSTER  SEARCH  TOOL                               "
-        echo,UA
         echo "=============================================================================="
-        echo "                              v0.7.3"
+        echo "                              v0.7.5"
         echo "=============================================================================="
         echo ""
     fi
@@ -271,13 +281,13 @@ show_file_counts() {
 
         [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files in path: $path" >&2
 
-        # Find all subdirectories (user folders) and process them directly
+        # Find all subdirectories (user folders)
         while IFS= read -r -d '' user_dir; do
             local user=$(basename "$user_dir")
             
             [ "$DEBUG" = "1" ] && echo "[DEBUG] Processing user directory: $user_dir" >&2
             
-            # Use find with -printf to get both count and size in one pass
+            # Build find command
             local find_cmd="find \"$user_dir\" -type f"
             
             case "$format" in
@@ -287,21 +297,33 @@ show_file_counts() {
                 "all")  find_cmd+=" \( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" \)" ;;
             esac
             
-            # Add -printf to get size in bytes
-            find_cmd+=" -printf \"%s\n\""
-            
-            [ "$DEBUG" = "1" ] && echo "[DEBUG] Find command: $find_cmd" >&2
-            
-            # Execute find and process results
+            # Platform-specific size calculation
             local count=0
             local size_bytes=0
             
-            while IFS= read -r file_size; do
-                if [[ "$file_size" =~ ^[0-9]+$ ]]; then
-                    ((count++))
-                    ((size_bytes += file_size))
-                fi
-            done < <(eval "$find_cmd" 2>/dev/null)
+            if [ "$IS_MACOS" -eq 1 ]; then
+                # macOS: Use stat -f "%z" for file sizes
+                find_cmd+=" -exec stat -f \"%z\" {} \;"
+                [ "$DEBUG" = "1" ] && echo "[DEBUG] macOS find command: $find_cmd" >&2
+                
+                while IFS= read -r file_size; do
+                    if [[ "$file_size" =~ ^[0-9]+$ ]]; then
+                        ((count++))
+                        ((size_bytes += file_size))
+                    fi
+                done < <(eval "$find_cmd" 2>/dev/null)
+            else
+                # Non-macOS: Use find -printf "%s\n"
+                find_cmd+=" -printf \"%s\n\""
+                [ "$DEBUG" = "1" ] && echo "[DEBUG] Non-macOS find command: $find_cmd" >&2
+                
+                while IFS= read -r file_size; do
+                    if [[ "$file_size" =~ ^[0-9]+$ ]]; then
+                        ((count++))
+                        ((size_bytes += file_size))
+                    fi
+                done < <(eval "$find_cmd" 2>/dev/null)
+            fi
             
             [ "$DEBUG" = "1" ] && echo "[DEBUG] User: $user, Files: $count, Size: $size_bytes bytes" >&2
             
@@ -319,7 +341,7 @@ show_file_counts() {
         done < <(find "$path" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     done
 
-    # Calculate totals before displaying
+    # Calculate totals
     local total_files=$(awk -F'|' '{sum += $3} END {printf "%.0f", sum}' "$temp_file")
     local total_size=$(awk -F'|' '{sum += $4} END {printf "%.0f", sum}' "$temp_file")
     
@@ -334,7 +356,7 @@ show_file_counts() {
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by count (descending)" >&2 ;;
         "size-asc")   sort_cmd="sort -t'|' -k4,4n"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by size (ascending)" >&2 ;;
-        "size-desc")  sort_cmd="sort -t'|' -k4,4nr"
+        "size-desc") sort_cmd="sort -t'|' -k4,4nr"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by size (descending)" >&2 ;;
         *)           sort_cmd="sort -t'|' -k1,1n"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by priority (default)" >&2 ;;
@@ -714,6 +736,7 @@ interactive_mode() {
                         if [ "$fmt_choice" != "1" ]; then
                             echo "Format set to: $format"
                         fi
+                        continue
                         ;;
                     3)
                         echo "Available drives:"
@@ -823,11 +846,13 @@ main() {
             f) case "$OPTARG" in
                    jpg|jpeg|png|all) format="$OPTARG" ;;
                    *) echo "Invalid format. Use: jpg, jpeg, png, or all" >&2; exit 1 ;;
-               esac ;;
+               esac
+               ;;
             s) case "$OPTARG" in
                    username|filename|year-asc|year-desc|priority|count-asc|count-desc|size-asc|size-desc) sort_by="$OPTARG" ;;
                    *) echo "Invalid sort option" >&2; exit 1 ;;
-               esac ;;
+               esac
+               ;;
             d) DEBUG=1 ;;
             v) verbose=1 ;;
             ?) show_help >&2; exit 1 ;;
