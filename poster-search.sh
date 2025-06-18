@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.3.1"  # Major.Minor.Patch
+readonly VERSION="0.4.0"  # Major.Minor.Patch
 
 # Changelog:
+# v0.4.0 - Added disk usage information to file count display (-c flag)
+#        - New sort options: size-asc, size-desc for sorting by disk usage
+#        - Enhanced display format to show both file count and space used
+#        - Added human-readable size formatting (B, KB, MB, GB)
 # v0.3.1 - Fixed total file count calculation (was showing 0 due to subshell issue)
 #        - Added sorting options for file count display (-c flag)
 #        - New sort options: count-asc, count-desc for sorting by file count
@@ -92,11 +96,11 @@ Usage: $0 [-u username] [-s sort] [-f format] [-l] [-c] [-h] [search term]
 Options:
     -h          Show this help text
     -l          List all users
-    -c          Show file count per user
+    -c          Show file count and disk usage per user
     -u user     Filter by username
     -f format   Filter by format: jpg, jpeg, png, or all (default: all)
     -s sort     Sort by: priority (default), username, filename, year-asc, year-desc
-                For -c flag: priority (default), username, count-asc, count-desc
+                For -c flag: priority (default), username, count-asc, count-desc, size-asc, size-desc
     -v          Verbose output (shows full path)
     -d          Debug mode (shows script operations)
 
@@ -105,9 +109,10 @@ Examples:
     $0 -f png logo              # Search for "logo" in PNG files only
     $0 -u LionCityGaming movie  # Search for "movie" in LionCityGaming's files
     $0 -s year-desc movie       # Search for "movie", newest first
-    $0 -c                       # Show file count per user
-    $0 -c -f jpg                # Show JPG file count per user
+    $0 -c                       # Show file count and disk usage per user
+    $0 -c -f jpg                # Show JPG file count and disk usage per user
     $0 -c -s count-desc         # Show file count per user, highest count first
+    $0 -c -s size-desc          # Show file count per user, largest size first
 EOF
 }
 
@@ -125,7 +130,39 @@ list_users() {
     done
 }
 
-# Show file count per user
+# Function to format bytes into human-readable format
+format_bytes() {
+    local bytes="$1"
+    
+    # Handle scientific notation and ensure we have a valid number
+    if [[ "$bytes" == *"e+"* ]] || [[ "$bytes" == *"E+"* ]]; then
+        # Convert scientific notation to regular number using awk
+        bytes=$(awk "BEGIN {printf \"%.0f\", $bytes}")
+    fi
+    
+    # Ensure bytes is a valid integer
+    if ! [[ "$bytes" =~ ^[0-9]+$ ]]; then
+        printf "0 B"
+        return
+    fi
+    
+    # Use awk for all calculations to handle large numbers properly
+    awk -v bytes="$bytes" 'BEGIN {
+        if (bytes < 1024) {
+            printf "%.0f B", bytes
+        } else if (bytes < 1048576) {
+            printf "%.1f KB", bytes/1024
+        } else if (bytes < 1073741824) {
+            printf "%.1f MB", bytes/1048576
+        } else if (bytes < 1099511627776) {
+            printf "%.1f GB", bytes/1073741824
+        } else {
+            printf "%.1f TB", bytes/1099511627776
+        }
+    }'
+}
+
+# Show file count per user with disk usage
 show_file_counts() {
     local format="$1"
     local sort_by="$2"
@@ -133,10 +170,10 @@ show_file_counts() {
     
     [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files with format: $format, sort: $sort_by" >&2
 
-    echo "File count per user:"
-    echo "===================="
+    echo "File count and disk usage per user:"
+    echo "==================================="
     
-    # Collect all user directories and their file counts
+    # Collect all user directories and their file counts + disk usage
     for path in "${SEARCH_PATHS[@]}"; do
         [ ! -d "$path" ] && {
             [ "$DEBUG" = "1" ] && echo "[DEBUG] Skipping non-existent path: $path" >&2
@@ -145,12 +182,13 @@ show_file_counts() {
 
         [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files in path: $path" >&2
 
-        # Find all subdirectories (user folders)
-        find "$path" -mindepth 1 -maxdepth 1 -type d | while read -r user_dir; do
+        # Find all subdirectories (user folders) and process them directly
+        while IFS= read -r -d '' user_dir; do
             local user=$(basename "$user_dir")
-            local count=0
             
-            # Build find command for counting files
+            [ "$DEBUG" = "1" ] && echo "[DEBUG] Processing user directory: $user_dir" >&2
+            
+            # Use find with -printf to get both count and size in one pass - MUCH faster!
             local find_cmd="find \"$user_dir\" -type f"
             
             case "$format" in
@@ -160,10 +198,23 @@ show_file_counts() {
                 "all")  find_cmd+=" \( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" \)" ;;
             esac
             
-            # Count files
-            count=$(eval "$find_cmd" 2>/dev/null | wc -l)
+            # Add -printf to get size in bytes - this is MUCH faster than calling stat on each file
+            find_cmd+=" -printf \"%s\n\""
             
-            [ "$DEBUG" = "1" ] && echo "[DEBUG] User: $user, Files: $count" >&2
+            [ "$DEBUG" = "1" ] && echo "[DEBUG] Find command: $find_cmd" >&2
+            
+            # Execute find and process results - this gets both count and total size efficiently
+            local count=0
+            local size_bytes=0
+            
+            while IFS= read -r file_size; do
+                if [[ "$file_size" =~ ^[0-9]+$ ]]; then
+                    ((count++))
+                    ((size_bytes += file_size))
+                fi
+            done < <(eval "$find_cmd" 2>/dev/null)
+            
+            [ "$DEBUG" = "1" ] && echo "[DEBUG] User: $user, Files: $count, Size: $size_bytes bytes" >&2
             
             # Find user's priority for sorting
             local priority=999
@@ -174,12 +225,14 @@ show_file_counts() {
                 fi
             done
             
-            echo "$priority|$user|$count" >> "$temp_file"
-        done
+            echo "$priority|$user|$count|$size_bytes" >> "$temp_file"
+            
+        done < <(find "$path" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     done
 
-    # Calculate total files before displaying
-    local total_files=$(awk -F'|' '{sum += $3} END {print sum}' "$temp_file")
+    # Calculate totals before displaying - use awk to handle large numbers
+    local total_files=$(awk -F'|' '{sum += $3} END {printf "%.0f", sum}' "$temp_file")
+    local total_size=$(awk -F'|' '{sum += $4} END {printf "%.0f", sum}' "$temp_file")
     
     # Sort based on the sort_by parameter
     local sort_cmd
@@ -190,12 +243,16 @@ show_file_counts() {
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by count (ascending)" >&2 ;;
         "count-desc") sort_cmd="sort -t'|' -k3,3nr"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by count (descending)" >&2 ;;
+        "size-asc")   sort_cmd="sort -t'|' -k4,4n"
+                     [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by size (ascending)" >&2 ;;
+        "size-desc")  sort_cmd="sort -t'|' -k4,4nr"
+                     [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by size (descending)" >&2 ;;
         *)           sort_cmd="sort -t'|' -k1,1n"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by priority (default)" >&2 ;;
     esac
     
     # Sort and display
-    eval "$sort_cmd $temp_file" | while IFS='|' read -r priority user count; do
+    eval "$sort_cmd $temp_file" | while IFS='|' read -r priority user count size_bytes; do
         # Find user's color
         local color="0"
         for user_data in "${USERS[@]}"; do
@@ -212,15 +269,17 @@ show_file_counts() {
         if [ "$format" != "all" ]; then
             printf " (.%s)" "$format"
         fi
+        
+        # Add disk usage
+        printf "   [%s]" "$(format_bytes "$size_bytes")"
         echo
     done
     
-    echo "===================="
-    printf "Total files: %d" "$total_files"
+    echo "==================================="
+    printf "Total Count: %s files [%s]\n" "$total_files" "$(format_bytes "$total_size")"
     if [ "$format" != "all" ]; then
-        printf " (.%s)" "$format"
+        printf "(Only %s files counted)\n" "$format"
     fi
-    echo
     
     rm -f "$temp_file"
 }
@@ -376,7 +435,7 @@ main() {
                    *) echo "Invalid format. Use: jpg, jpeg, png, or all" >&2; exit 1 ;;
                esac ;;
             s) case "$OPTARG" in
-                   username|filename|year-asc|year-desc|priority|count-asc|count-desc) sort_by="$OPTARG" ;;
+                   username|filename|year-asc|year-desc|priority|count-asc|count-desc|size-asc|size-desc) sort_by="$OPTARG" ;;
                    *) echo "Invalid sort option" >&2; exit 1 ;;
                esac ;;
             d) DEBUG=1 ;;
