@@ -1,37 +1,17 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.6.0"  # Major.Minor.Patch
+readonly VERSION="0.7.0"  # Major.Minor.Patch
 
 # Changelog:
+# v0.7.0 - Enhanced interactive menu system with consistent navigation (option 1 always returns to main menu)
 # v0.6.0 - Added external poster-search.env configuration file support
-#        - Automatic poster-search.env.example file creation for easy setup
-#        - Configuration persistence across script updates
-#        - User-defined poster paths and user configurations
-#        - Safe configuration parsing with fallback to built-in defaults
-#        - Enhanced portability and maintainability
 # v0.5.0 - Added interactive mode (-i flag) with menu-driven interface
-#        - Main menu with search, statistics, user listing, and advanced options
-#        - Advanced options submenu for configuring filters and settings
-#        - Collection statistics submenu with format and sorting options
-#        - Persistent settings within interactive session
-#        - Clear screen management and user-friendly navigation
-#        - Enhanced user experience with guided interface
 # v0.4.0 - Added disk usage information to file count display (-c flag)
-#        - New sort options: size-asc, size-desc for sorting by disk usage
-#        - Enhanced display format to show both file count and space used
-#        - Added human-readable size formatting (B, KB, MB, GB)
-# v0.3.1 - Fixed total file count calculation (was showing 0 due to subshell issue)
-#        - Added sorting options for file count display (-c flag)
-#        - New sort options: count-asc, count-desc for sorting by file count
-#        - Enhanced -s argument to work with both search and count modes
+# v0.3.1 - Fixed total file count calculation and added sorting options for file count display
 # v0.3.0 - Added file count function (-c flag) to show files per user
-#        - Added total file count display
 # v0.2.1 - Added tput detection and color fallback
-#        - Added verbose output mode (-v flag) for full paths
 # v0.2.0 - Complete rebuild with simplified codebase
-#        - Same feature set, more maintainable code
-#        - Optimized search performance
 
 # ============================================================================
 # User Configuration
@@ -179,6 +159,26 @@ else
     [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output disabled" >&2
 fi
 
+# Display ASCII title
+show_ascii_title() {
+    if [ "$HAS_COLORS" -eq 1 ]; then
+        printf "\e[1;36m"
+        echo "=============================================================================="
+        echo "                         POSTER  SEARCH  TOOL                               "
+        echo "=============================================================================="
+        printf "\e[0m\e[1;35m                              v0.7.0\e[0m\n"
+        printf "\e[1;34m==============================================================================\e[0m\n"
+    else
+        echo ""
+        echo "=============================================================================="
+        echo "                         POSTER  SEARCH  TOOL                               "
+        echo "=============================================================================="
+        echo "                              v0.7.0"
+        echo "=============================================================================="
+        echo ""
+    fi
+}
+
 # Color handling functions
 color_text() {
     if [ "$HAS_COLORS" -eq 1 ]; then
@@ -209,7 +209,7 @@ Usage: $0 [-u username] [-s sort] [-f format] [-l] [-c] [-i] [-h] [search term]
 
 Options:
     -h          Show this help text
-    -l          List all users
+    -l          List all synced drives
     -c          Show file count and disk usage per user
     -i          Interactive mode (menu-driven interface)
     -u user     Filter by username
@@ -224,10 +224,10 @@ Examples:
     $0 -f png logo              # Search for "logo" in PNG files only
     $0 -u LionCityGaming movie  # Search for "movie" in LionCityGaming's files
     $0 -s year-desc movie       # Search for "movie", newest first
-    $0 -c                       # Show file count and disk usage per user
-    $0 -c -f jpg                # Show JPG file count and disk usage per user
-    $0 -c -s count-desc         # Show file count per user, highest count first
-    $0 -c -s size-desc          # Show file count per user, largest size first
+    $0 -c                       # Show file count and disk usage per drive
+    $0 -c -f jpg                # Show JPG file count and disk usage per drive
+    $0 -c -s count-desc         # Show file count per drive, highest count first
+    $0 -c -s size-desc          # Show file count per drive, largest size first
     $0 -i                       # Start interactive mode
 EOF
 }
@@ -235,7 +235,7 @@ EOF
 # List users with their colors
 list_users() {
     local count=1
-    echo "Users (in priority order):"
+    echo "Drives (in priority order):"
     for user_data in "${USERS[@]}"; do
         local user="${user_data%%:*}"
         local color="${user_data##*:}"
@@ -269,7 +269,7 @@ format_bytes() {
         } else if (bytes < 1048576) {
             printf "%.1f KB", bytes/1024
         } else if (bytes < 1073741824) {
-            printf "%.1f MB", bytes/1048576
+            printf "%.1f MB", bytes/1073741824
         } else if (bytes < 1099511627776) {
             printf "%.1f GB", bytes/1073741824
         } else {
@@ -286,7 +286,7 @@ show_file_counts() {
     
     [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files with format: $format, sort: $sort_by" >&2
 
-    echo "File count and disk usage per user:"
+    echo "File count and disk usage per drive:"
     echo "==================================="
     
     # Collect all user directories and their file counts + disk usage
@@ -536,182 +536,532 @@ interactive_mode() {
     local verbose=0
     
     clear
-    echo "Poster Search Tool v${VERSION} - Interactive Mode"
-    echo "================================================="
+    show_ascii_title
+    if [ "$HAS_COLORS" -eq 1 ]; then
+        printf "\e[1;33mInteractive Mode\e[0m\n"
+        printf "\e[1;32m================\e[0m\n"
+    else
+        echo "Interactive Mode"
+        echo "================"
+    fi
     echo
     
     while true; do
-        echo "Main Menu:"
-        echo "  1) Search for posters"
-        echo "  2) Show collection statistics" 
-        echo "  3) List all users"
-        echo "  4) Advanced search options"
-        echo "  5) Exit"
+        if [ "$HAS_COLORS" -eq 1 ]; then
+            printf "\e[1;37m🎯 Main Menu:\e[0m\n"
+            printf "  \e[1;32m1) 🔍 Search for posters\e[0m\n"
+            printf "  \e[1;33m2) 📊 Show collection statistics\e[0m\n" 
+            printf "  \e[1;34m3) 💾 List all synced drives\e[0m\n"
+            printf "  \e[1;35m4) ⚙️ Advanced search options\e[0m\n"
+            printf "  \e[1;31m5) ❌ Exit\e[0m\n"
+        else
+            echo "Main Menu:"
+            echo "  1) Search for posters"
+            echo "  2) Show collection statistics" 
+            echo "  3) List all synced drives"
+            echo "  4) Advanced search options"
+            echo "  5) Exit"
+        fi
         echo
-        read -p "Choose an option (1-5): " choice
+        if [ "$HAS_COLORS" -eq 1 ]; then
+            printf "\e[1;97mChoose an option (1-5): \e[0m"
+        else
+            printf "Choose an option (1-5): "
+        fi
+        read choice
         echo
         
         case $choice in
             1)
-                read -p "Enter search term (or press Enter for all files): " search_term
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;36m🔍 Enter search term (or press Enter to cancel): \e[0m"
+                else
+                    printf "Enter search term (or press Enter to cancel): "
+                fi
+                read search_term
                 echo
-                echo "Searching..."
+                if [ -z "$search_term" ]; then
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;33m🏠 Search cancelled, returning to main menu...\e[0m\n"
+                    else
+                        echo "Search cancelled, returning to main menu..."
+                    fi
+                    echo
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;32m✅ Press Enter to continue...\e[0m"
+                    else
+                        printf "Press Enter to continue..."
+                    fi
+                    read
+                    clear
+                    show_ascii_title
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;33mInteractive Mode\e[0m\n"
+                        printf "\e[1;32m================\e[0m\n"
+                    else
+                        echo "Interactive Mode"
+                        echo "================"
+                    fi
+                    echo
+                    continue
+                fi
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;33m⏳ Searching...\e[0m\n"
+                else
+                    echo "Searching..."
+                fi
                 search_files "$search_term" "$username" "$format" "$sort_by" "$verbose"
                 echo
-                read -p "Press Enter to continue..."
-                clear
+                if [ "$stats_choice" != "4" ]; then
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;32m✅ Press Enter to continue...\e[0m"
+                    else
+                        printf "Press Enter to continue..."
+                    fi
+                    read
+                    clear
+                    show_ascii_title
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;33mInteractive Mode\e[0m\n"
+                        printf "\e[1;32m================\e[0m\n"
+                    else
+                        echo "Interactive Mode"
+                        echo "================"
+                    fi
+                    echo
+                fi
                 ;;
             2)
-                echo "Collection Statistics Options:"
-                echo "  1) Show all files"
-                echo "  2) Show by format"
-                echo "  3) Choose sorting"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;35m📊 Collection Statistics Options:\e[0m\n"
+                    printf "  \e[1;31m1) 🏠 Back to main menu\e[0m\n"
+                    printf "  \e[1;32m2) 📋 Show all files\e[0m\n"
+                    printf "  \e[1;33m3) 🎨 Show by format\e[0m\n"
+                    printf "  \e[1;34m4) 🔄 Choose sorting\e[0m\n"
+                else
+                    echo "Collection Statistics Options:"
+                    echo "  1) Back to main menu"
+                    echo "  2) Show all files"
+                    echo "  3) Show by format"
+                    echo "  4) Choose sorting"
+                fi
                 echo
-                read -p "Choose option (1-3): " stats_choice
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;97mChoose option (1-4): \e[0m"
+                else
+                    printf "Choose option (1-4): "
+                fi
+                read stats_choice
                 echo
                 
                 case $stats_choice in
                     1)
-                        show_file_counts "all" "priority"
+                        clear
+                        show_ascii_title
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;33mInteractive Mode\e[0m\n"
+                            printf "\e[1;32m================\e[0m\n"
+                        else
+                            echo "Interactive Mode"
+                            echo "================"
+                        fi
+                        echo
+                        continue
                         ;;
                     2)
-                        echo "Choose format:"
-                        echo "  1) JPG files only"
-                        echo "  2) JPEG files only" 
-                        echo "  3) PNG files only"
-                        echo "  4) All formats"
-                        read -p "Choose format (1-4): " format_choice
+                        show_file_counts "all" "priority"
+                        ;;
+                    3)
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;35m🎨 Choose format:\e[0m\n"
+                            printf "  \e[1;31m1) 🏠 Back to main menu\e[0m\n"
+                            printf "  \e[1;32m2) 📸 JPG files only\e[0m\n"
+                            printf "  \e[1;33m3) 📷 JPEG files only\e[0m\n" 
+                            printf "  \e[1;34m4) 🖼️ PNG files only\e[0m\n"
+                            printf "  \e[1;35m5) 🎭 All formats\e[0m\n"
+                            printf "\e[1;97mChoose format (1-5): \e[0m"
+                        else
+                            echo "Choose format:"
+                            echo "  1) Back to main menu"
+                            echo "  2) JPG files only"
+                            echo "  3) JPEG files only" 
+                            echo "  4) PNG files only"
+                            echo "  5) All formats"
+                            printf "Choose format (1-5): "
+                        fi
+                        read format_choice
                         case $format_choice in
-                            1) show_file_counts "jpg" "priority" ;;
-                            2) show_file_counts "jpeg" "priority" ;;
-                            3) show_file_counts "png" "priority" ;;
+                            1) 
+                                clear
+                                show_ascii_title
+                                if [ "$HAS_COLORS" -eq 1 ]; then
+                                    printf "\e[1;33mInteractive Mode\e[0m\n"
+                                    printf "\e[1;32m================\e[0m\n"
+                                else
+                                    echo "Interactive Mode"
+                                    echo "================"
+                                fi
+                                echo
+                                continue 2
+                                ;;
+                            2) show_file_counts "jpg" "priority" ;;
+                            3) show_file_counts "jpeg" "priority" ;;
+                            4) show_file_counts "png" "priority" ;;
+                            5) show_file_counts "all" "priority" ;;
                             *) show_file_counts "all" "priority" ;;
                         esac
                         ;;
-                    3)
-                        echo "Sort by:"
-                        echo "  1) User priority (default)"
-                        echo "  2) Username alphabetically"
-                        echo "  3) File count (highest first)"
-                        echo "  4) File count (lowest first)"
-                        echo "  5) Disk usage (largest first)"
-                        echo "  6) Disk usage (smallest first)"
-                        read -p "Choose sort option (1-6): " sort_choice
+                    4)
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;93m🔄 Sort by:\e[0m\n"
+                            printf "  \e[1;31m1) 🏠 Back to main menu\e[0m\n"
+                            printf "  \e[1;32m2) ⭐ User priority (default)\e[0m\n"
+                            printf "  \e[1;33m3) 🔤 Username alphabetically\e[0m\n"
+                            printf "  \e[1;34m4) 📈 File count (highest first)\e[0m\n"
+                            printf "  \e[1;35m5) 📉 File count (lowest first)\e[0m\n"
+                            printf "  \e[1;36m6) 💾 Disk usage (largest first)\e[0m\n"
+                            printf "  \e[1;91m7) 💿 Disk usage (smallest first)\e[0m\n"
+                            printf "\e[1;97mChoose sort option (1-7): \e[0m"
+                        else
+                            echo "Sort by:"
+                            echo "  1) Back to main menu"
+                            echo "  2) User priority (default)"
+                            echo "  3) Username alphabetically"
+                            echo "  4) File count (highest first)"
+                            echo "  5) File count (lowest first)"
+                            echo "  6) Disk usage (largest first)"
+                            echo "  7) Disk usage (smallest first)"
+                            printf "Choose sort option (1-7): "
+                        fi
+                        read sort_choice
                         local stats_sort="priority"
                         case $sort_choice in
-                            2) stats_sort="username" ;;
-                            3) stats_sort="count-desc" ;;
-                            4) stats_sort="count-asc" ;;
-                            5) stats_sort="size-desc" ;;
-                            6) stats_sort="size-asc" ;;
+                            1) 
+                                clear
+                                show_ascii_title
+                                if [ "$HAS_COLORS" -eq 1 ]; then
+                                    printf "\e[1;33mInteractive Mode\e[0m\n"
+                                    printf "\e[1;32m================\e[0m\n"
+                                else
+                                    echo "Interactive Mode"
+                                    echo "================"
+                                fi
+                                echo
+                                continue 2
+                                ;;
+                            2) stats_sort="priority" ;;
+                            3) stats_sort="username" ;;
+                            4) stats_sort="count-desc" ;;
+                            5) stats_sort="count-asc" ;;
+                            6) stats_sort="size-desc" ;;
+                            7) stats_sort="size-asc" ;;
                         esac
-                        show_file_counts "$format" "$stats_sort"
+                        # Only show file counts if not going back to menu
+                        if [ "$sort_choice" != "1" ]; then
+                            show_file_counts "$format" "$stats_sort"
+                        fi
                         ;;
                 esac
                 echo
-                read -p "Press Enter to continue..."
-                clear
+                # Only show continue prompt if not going back to main menu
+                if [ "$stats_choice" != "1" ] && [ "$format_choice" != "1" ] && [ "$sort_choice" != "1" ]; then
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;32m✅ Press Enter to continue...\e[0m"
+                    else
+                        printf "Press Enter to continue..."
+                    fi
+                    read
+                    clear
+                    show_ascii_title
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;33mInteractive Mode\e[0m\n"
+                        printf "\e[1;32m================\e[0m\n"
+                    else
+                        echo "Interactive Mode"
+                        echo "================"
+                    fi
+                    echo
+                fi
                 ;;
             3)
                 list_users
                 echo
-                read -p "Press Enter to continue..."
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;32m✅ Press Enter to continue...\e[0m"
+                else
+                    printf "Press Enter to continue..."
+                fi
+                read
                 clear
+                show_ascii_title
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;33mInteractive Mode\e[0m\n"
+                    printf "\e[1;32m================\e[0m\n"
+                else
+                    echo "Interactive Mode"
+                    echo "================"
+                fi
+                echo
                 ;;
             4)
-                echo "Advanced Search Options:"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;93m⚙️  Advanced Search Options:\e[0m\n"
+                else
+                    echo "Advanced Search Options:"
+                fi
                 echo
-                echo "Current settings:"
-                echo "  Format filter: $format"
-                echo "  User filter: ${username:-none}"
-                echo "  Sort by: $sort_by"
-                echo "  Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;37m📋 Current settings:\e[0m\n"
+                    printf "  \e[1;36mFormat filter:\e[0m \e[1;33m%s\e[0m\n" "$format"
+                    printf "  \e[1;35mUser filter:\e[0m \e[1;33m%s\e[0m\n" "${username:-none}"
+                    printf "  \e[1;34mSort by:\e[0m \e[1;33m%s\e[0m\n" "$sort_by"
+                    printf "  \e[1;32mVerbose mode:\e[0m \e[1;33m%s\e[0m\n" "$([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                else
+                    echo "Current settings:"
+                    echo "  Format filter: $format"
+                    echo "  Drive filter: ${username:-none}"
+                    echo "  Sort by: $sort_by"
+                    echo "  Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                fi
                 echo
-                echo "Change settings:"
-                echo "  1) Set format filter"
-                echo "  2) Set user filter"
-                echo "  3) Set sort order"
-                echo "  4) Toggle verbose mode"
-                echo "  5) Reset to defaults"
-                echo "  6) Back to main menu"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;37m🔧 Change settings:\e[0m\n"
+                    printf "  \e[1;31m1) 🏠 Back to main menu\e[0m\n"
+                    printf "  \e[1;32m2) \e[1;36m🎨 Set format filter\e[0m\n"
+                    printf "  \e[1;33m3) \e[1;35m💾 Set drive filter\e[0m\n"
+                    printf "  \e[1;34m4) \e[1;93m🔄 Set sort order\e[0m\n"
+                    printf "  \e[1;35m5) \e[1;31m🗣️ Toggle verbose mode\e[0m\n"
+                    printf "  \e[1;36m6) \e[1;94m🔄 Reset to defaults\e[0m\n"
+                else
+                    echo "Change settings:"
+                    echo "  1) Back to main menu"
+                    echo "  2) Set format filter"
+                    echo "  3) Set drive filter"
+                    echo "  4) Set sort order"
+                    echo "  5) Toggle verbose mode"
+                    echo "  6) Reset to defaults"
+                fi
                 echo
-                read -p "Choose option (1-6): " adv_choice
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;97mChoose option (1-6): \e[0m"
+                else
+                    printf "Choose option (1-6): "
+                fi
+                read adv_choice
                 echo
                 
                 case $adv_choice in
                     1)
-                        echo "Choose format:"
-                        echo "  1) All formats"
-                        echo "  2) JPG only"
-                        echo "  3) JPEG only"
-                        echo "  4) PNG only"
-                        read -p "Choose format (1-4): " fmt_choice
-                        case $fmt_choice in
-                            2) format="jpg" ;;
-                            3) format="jpeg" ;;
-                            4) format="png" ;;
-                            *) format="all" ;;
-                        esac
-                        echo "Format set to: $format"
+                        clear
+                        show_ascii_title
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;33mInteractive Mode\e[0m\n"
+                            printf "\e[1;32m================\e[0m\n"
+                        else
+                            echo "Interactive Mode"
+                            echo "================"
+                        fi
+                        echo
+                        continue
                         ;;
                     2)
-                        echo "Available users:"
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;36m🎨 Choose format:\e[0m\n"
+                            printf "  \e[1;31m1) 🏠 Back to main menu\e[0m\n"
+                            printf "  \e[1;32m2) 🎭 All formats\e[0m\n"
+                            printf "  \e[1;33m3) 📸 JPG only\e[0m\n"
+                            printf "  \e[1;34m4) 📷 JPEG only\e[0m\n"
+                            printf "  \e[1;35m5) 🖼️ PNG only\e[0m\n"
+                            printf "\e[1;97mChoose format (1-5): \e[0m"
+                        else
+                            echo "Choose format:"
+                            echo "  1) Back to main menu"
+                            echo "  2) All formats"
+                            echo "  3) JPG only"
+                            echo "  4) JPEG only"
+                            echo "  5) PNG only"
+                            printf "Choose format (1-5): "
+                        fi
+                        read fmt_choice
+                        case $fmt_choice in
+                            1) 
+                                clear
+                                show_ascii_title
+                                if [ "$HAS_COLORS" -eq 1 ]; then
+                                    printf "\e[1;33mInteractive Mode\e[0m\n"
+                                    printf "\e[1;32m================\e[0m\n"
+                                else
+                                    echo "Interactive Mode"
+                                    echo "================"
+                                fi
+                                echo
+                                continue 2
+                                ;;
+                            2) format="all" ;;
+                            3) format="jpg" ;;
+                            4) format="jpeg" ;;
+                            5) format="png" ;;
+                            *) format="all" ;;
+                        esac
+                        if [ "$fmt_choice" != "1" ]; then
+                            if [ "$HAS_COLORS" -eq 1 ]; then
+                                printf "\e[1;32m✅ Format set to: \e[1;33m%s\e[0m\n" "$format"
+                            else
+                                echo "Format set to: $format"
+                            fi
+                        fi
+                        ;;
+                    3)
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;35m💾 Available drives:\e[0m\n"
+                        else
+                            echo "Available drives:"
+                        fi
                         local count=1
                         for user_data in "${USERS[@]}"; do
                             local user="${user_data%%:*}"
-                            printf "%3d. %s\n" "$count" "$user"
+                            if [ "$HAS_COLORS" -eq 1 ]; then
+                                printf "  \e[1;36m%3d.\e[0m \e[1;33m%s\e[0m\n" "$count" "$user"
+                            else
+                                printf "%3d. %s\n" "$count" "$user"
+                            fi
                             ((count++))
                         done
                         echo
-                        read -p "Enter username (or press Enter to clear filter): " username
-                        echo "User filter set to: ${username:-none}"
-                        ;;
-                    3)
-                        echo "Sort options:"
-                        echo "  1) User priority (default)"
-                        echo "  2) Username alphabetically"
-                        echo "  3) Filename alphabetically"
-                        echo "  4) Year (newest first)"
-                        echo "  5) Year (oldest first)"
-                        read -p "Choose sort option (1-5): " sort_choice
-                        case $sort_choice in
-                            2) sort_by="username" ;;
-                            3) sort_by="filename" ;;
-                            4) sort_by="year-desc" ;;
-                            5) sort_by="year-asc" ;;
-                            *) sort_by="priority" ;;
-                        esac
-                        echo "Sort order set to: $sort_by"
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;97mEnter drive name (or press Enter to clear filter): \e[0m"
+                        else
+                            printf "Enter drive name (or press Enter to clear filter): "
+                        fi
+                        read username
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;32m✅ Drive filter set to: \e[1;33m%s\e[0m\n" "${username:-none}"
+                        else
+                            echo "Drive filter set to: ${username:-none}"
+                        fi
                         ;;
                     4)
-                        verbose=$((1 - verbose))
-                        echo "Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;93m🔄 Sort options:\e[0m\n"
+                            printf "  \e[1;31m1) 🏠 Back to main menu\e[0m\n"
+                            printf "  \e[1;32m2) ⭐ User priority (default)\e[0m\n"
+                            printf "  \e[1;33m3) 🔤 Username alphabetically\e[0m\n"
+                            printf "  \e[1;34m4) 📝 Filename alphabetically\e[0m\n"
+                            printf "  \e[1;35m5) 📅 Year (newest first)\e[0m\n"
+                            printf "  \e[1;36m6) 📜 Year (oldest first)\e[0m\n"
+                            printf "\e[1;97mChoose sort option (1-6): \e[0m"
+                        else
+                            echo "Sort options:"
+                            echo "  1) Back to main menu"
+                            echo "  2) User priority (default)"
+                            echo "  3) Username alphabetically"
+                            echo "  4) Filename alphabetically"
+                            echo "  5) Year (newest first)"
+                            echo "  6) Year (oldest first)"
+                            printf "Choose sort option (1-6): "
+                        fi
+                        read sort_choice
+                        case $sort_choice in
+                            1) 
+                                clear
+                                show_ascii_title
+                                if [ "$HAS_COLORS" -eq 1 ]; then
+                                    printf "\e[1;33mInteractive Mode\e[0m\n"
+                                    printf "\e[1;32m================\e[0m\n"
+                                else
+                                    echo "Interactive Mode"
+                                    echo "================"
+                                fi
+                                echo
+                                continue 2
+                                ;;
+                            2) sort_by="priority" ;;
+                            3) sort_by="username" ;;
+                            4) sort_by="filename" ;;
+                            5) sort_by="year-desc" ;;
+                            6) sort_by="year-asc" ;;
+                            *) sort_by="priority" ;;
+                        esac
+                        if [ "$sort_choice" != "1" ]; then
+                            if [ "$HAS_COLORS" -eq 1 ]; then
+                                printf "\e[1;32m✅ Sort order set to: \e[1;33m%s\e[0m\n" "$sort_by"
+                            else
+                                echo "Sort order set to: $sort_by"
+                            fi
+                        fi
                         ;;
                     5)
+                        verbose=$((1 - verbose))
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;32m✅ Verbose mode: \e[1;33m%s\e[0m\n" "$([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                        else
+                            echo "Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                        fi
+                        ;;
+                    6)
                         username=""
                         format="all"
                         sort_by="priority"
                         verbose=0
-                        echo "Settings reset to defaults"
-                        ;;
-                    6)
-                        clear
-                        continue
+                        if [ "$HAS_COLORS" -eq 1 ]; then
+                            printf "\e[1;32m✅ Settings reset to defaults\e[0m\n"
+                        else
+                            echo "Settings reset to defaults"
+                        fi
                         ;;
                 esac
-                echo
-                read -p "Press Enter to continue..."
-                clear
+                # Only show continue prompt if not going back to main menu
+                if [ "$adv_choice" != "1" ] && [ "$fmt_choice" != "1" ] && [ "$sort_choice" != "1" ]; then
+                    echo
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;32m✅ Press Enter to continue...\e[0m"
+                    else
+                        printf "Press Enter to continue..."
+                    fi
+                    read
+                    clear
+                    show_ascii_title
+                    if [ "$HAS_COLORS" -eq 1 ]; then
+                        printf "\e[1;33mInteractive Mode\e[0m\n"
+                        printf "\e[1;32m================\e[0m\n"
+                    else
+                        echo "Interactive Mode"
+                        echo "================"
+                    fi
+                    echo
+                fi
                 ;;
             5)
-                echo "Goodbye!"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;32m👋 Goodbye!\e[0m\n"
+                else
+                    echo "Goodbye!"
+                fi
                 exit 0
                 ;;
             *)
-                echo "Invalid option. Please choose 1-5."
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;31m❌ Invalid option. Please choose 1-5.\e[0m\n"
+                else
+                    echo "Invalid option. Please choose 1-5."
+                fi
                 echo
-                read -p "Press Enter to continue..."
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;32m✅ Press Enter to continue...\e[0m"
+                else
+                    printf "Press Enter to continue..."
+                fi
+                read
                 clear
+                show_ascii_title
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "\e[1;33mInteractive Mode\e[0m\n"
+                    printf "\e[1;32m================\e[0m\n"
+                else
+                    echo "Interactive Mode"
+                    echo "================"
+                fi
+                echo
                 ;;
         esac
     done
