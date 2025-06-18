@@ -46,68 +46,76 @@ nano poster-search.env  # Edit paths and users
 
 ## Essential Usage
 
-### Interactive Mode (Recommended)
+### 🎯 Interactive Mode (Recommended)
 ```bash
 ./poster-search.sh -i
 ```
 
-**Main Menu Example:**
+**✨ Main Menu:**
 ```
-==============================================================================
-                         POSTER  SEARCH  TOOL                               
-==============================================================================
-                              v0.7.5
-==============================================================================
-Interactive Mode
-================
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         🎬 POSTER SEARCH TOOL 🎬                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+                                  v0.7.5
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           📋 Interactive Mode                               │
+└──────────────────────────────────────────────────────────────────────────────┘
 
-Main Menu:
-  1) Search for posters
-  2) Show collection statistics
-  3) List all synced drives
-  4) Advanced search options
-  5) Exit
+🏠 Main Menu:
+  1️⃣  🔍 Search for posters
+  2️⃣  📊 Show collection statistics  
+  3️⃣  👥 List all synced drives
+  4️⃣  ⚙️  Advanced search options
+  5️⃣  🚪 Exit
 
-Choose an option (1-5): _
-```
-
-**Collection Statistics Submenu:**
-```
-Collection Statistics Options:
-  1) Back to main menu
-  2) Show all files
-  3) Show by format
-  4) Choose sorting
-
-Choose option (1-4): _
+💫 Choose an option (1-5): _
 ```
 
-**Advanced Options Submenu:**
+**📊 Collection Statistics Menu:**
 ```
-Advanced Search Options:
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         📈 Collection Statistics                            │
+└──────────────────────────────────────────────────────────────────────────────┘
 
-Current settings:
-  Format filter: all
-  Drive filter: none
-  Sort by: priority
-  Verbose mode: disabled
+🎯 Statistics Options:
+  1️⃣  🏠 Back to main menu
+  2️⃣  📁 Show all files
+  3️⃣  🎨 Show by format
+  4️⃣  📑 Choose sorting
 
-Change settings:
-  1) Back to main menu
-  2) Set format filter
-  3) Set drive filter
-  4) Set sort order
-  5) Toggle verbose mode
-  6) Reset to defaults
-
-Choose option (1-6): _
+💫 Choose option (1-4): _
 ```
 
-Features:
-- Consistent navigation (option 1 always returns to main menu)
-- Visual feedback and status indicators
-- Settings persistence within session
-- Intuitive menu flow with clear options
+**⚙️ Advanced Configuration Menu:**
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         🔧 Advanced Search Options                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+📋 Current Settings:
+  🎨 Format filter: all
+  👤 Drive filter: none  
+  📊 Sort by: priority
+  📝 Verbose mode: disabled
+
+🛠️ Change Settings:
+  1️⃣  🏠 Back to main menu
+  2️⃣  🎨 Set format filter
+  3️⃣  👤 Set drive filter
+  4️⃣  📊 Set sort order
+  5️⃣  📝 Toggle verbose mode
+  6️⃣  🔄 Reset to defaults
+
+💫 Choose option (1-6): _
+```
+
+**🌟 Interface Features:**
+- 🎯 **Consistent Navigation** - Option 1 always returns to main menu
+- ✨ **Visual Feedback** - Color-coded status indicators and confirmations  
+- 💾 **Session Memory** - Settings persist throughout your session
+- 🧭 **Intuitive Flow** - Logical menu structure with clear visual hierarchy
+- 🎨 **Smart Colors** - Automatic terminal compatibility detection
+- ⚡ **Fast & Responsive** - Optimized menu transitions and performance
 
 ### Command Line Usage
 ```bash
