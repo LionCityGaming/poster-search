@@ -141,22 +141,67 @@ else
     [ "$DEBUG" = "1" ] && echo "[DEBUG] Non-macOS system detected" >&2
 fi
 
-# Display ASCII title
+# Display enhanced ASCII title with visual appeal
 show_ascii_title() {
     if [ "$HAS_COLORS" -eq 1 ]; then
         printf "\e[1;36m"
-        echo "=============================================================================="
-        echo "                         POSTER  SEARCH  TOOL                               "
-        echo "=============================================================================="
-        printf "\e[0m\e[1;35m                              v0.7.5\e[0m\n"
-        printf "\e[1;34m==============================================================================\e[0m\n"
+        echo "╔═══════════════════════════╗"
+        printf "\e[1;35m║ POSTER SEARCH TOOL v0.7.5 ║\e[0m\n"
+        printf "\e[1;36m╚═══════════════════════════╝\e[0m\n"
+        printf "\e[1;34m┌──────────────────┐\e[0m\n"
+        printf "\e[1;34m│ Interactive Mode │\e[0m\n"
+        printf "\e[1;34m└──────────────────┘\e[0m\n"
     else
         echo ""
-        echo "=============================================================================="
-        echo "                         POSTER  SEARCH  TOOL                               "
-        echo "=============================================================================="
-        echo "                              v0.7.5"
-        echo "=============================================================================="
+        echo "==========================="
+        echo "POSTER  SEARCH  TOOL v0.7.5"
+        echo "==========================="
+        echo "================"
+        echo "Interactive Mode"
+        echo "================"
+        echo ""
+    fi
+}
+
+# Individual visual menu headers for perfect alignment
+show_collection_stats_header() {
+    if [ "$HAS_COLORS" -eq 1 ]; then
+        printf "\e[1;34m┌───────────────────────┐\e[0m\n"
+        printf "\e[1;34m│ Collection Statistics │\e[0m\n"
+        printf "\e[1;34m└───────────────────────┘\e[0m\n"
+    else
+        echo ""
+        echo "====================="
+        echo "Collection Statistics"
+        echo "====================="
+        echo ""
+    fi
+}
+
+show_synced_drives_header() {
+    if [ "$HAS_COLORS" -eq 1 ]; then
+        printf "\e[1;34m┌───────────────┐\e[0m\n"
+        printf "\e[1;34m│ Synced Drives │\e[0m\n"
+        printf "\e[1;34m└───────────────┘\e[0m\n"
+    else
+        echo ""
+        echo "============="
+        echo "Synced Drives"
+        echo "============="
+        echo ""
+    fi
+}
+
+show_advanced_options_header() {
+    if [ "$HAS_COLORS" -eq 1 ]; then
+        printf "\e[1;34m┌─────────────────────────┐\e[0m\n"
+        printf "\e[1;34m│ Advanced Search Options │\e[0m\n"
+        printf "\e[1;34m└─────────────────────────┘\e[0m\n"
+    else
+        echo ""
+        echo "======================="
+        echo "Advanced Search Options"
+        echo "======================="
         echo ""
     fi
 }
@@ -269,7 +314,7 @@ show_file_counts() {
     
     [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files with format: $format, sort: $sort_by" >&2
 
-    echo "File count and disk usage per drive:"
+    echo "📊 File count and disk usage per drive:"
     echo "==================================="
     
     # Collect all user directories and their file counts + disk usage
@@ -521,7 +566,7 @@ search_files() {
     rm -f "$results_file"
 }
 
-# Interactive mode function
+# Enhanced interactive mode function with visual improvements
 interactive_mode() {
     local username=""
     local format="all"
@@ -530,19 +575,30 @@ interactive_mode() {
     
     clear
     show_ascii_title
-    echo "Interactive Mode"
-    echo "================"
     echo
     
     while true; do
-        echo "Main Menu:"
-        echo "  1) Search for posters"
-        echo "  2) Show collection statistics"
-        echo "  3) List all synced drives"
-        echo "  4) Advanced search options"
-        echo "  5) Exit"
+        if [ "$HAS_COLORS" -eq 1 ]; then
+            echo "Main Menu:"
+            echo "  1) Search for posters"
+            echo "  2) Show collection statistics"  
+            echo "  3) List all synced drives"
+            echo "  4) Advanced search options"
+            echo "  5) Exit"
+        else
+            echo "Main Menu:"
+            echo "  1) Search for posters"
+            echo "  2) Show collection statistics"
+            echo "  3) List all synced drives"
+            echo "  4) Advanced search options"
+            echo "  5) Exit"
+        fi
         echo
-        printf "Choose an option (1-5): "
+        if [ "$HAS_COLORS" -eq 1 ]; then
+            printf "Choose an option (1-5): "
+        else
+            printf "Choose an option (1-5): "
+        fi
         read choice
         echo
         
@@ -558,32 +614,39 @@ interactive_mode() {
                     read
                     clear
                     show_ascii_title
-                    echo "Interactive Mode"
-                    echo "================"
                     echo
                     continue
                 fi
                 echo "Searching..."
                 search_files "$search_term" "$username" "$format" "$sort_by" "$verbose"
                 echo
-                if [ "$stats_choice" != "4" ]; then
-                    printf "Press Enter to continue..."
-                    read
-                    clear
-                    show_ascii_title
-                    echo "Interactive Mode"
-                    echo "================"
-                    echo
-                fi
+                printf "Press Enter to continue..."
+                read
+                clear
+                show_ascii_title
+                echo
                 ;;
             2)
-                echo "Collection Statistics Options:"
-                echo "  1) Back to main menu"
-                echo "  2) Show all files"
-                echo "  3) Show by format"
-                echo "  4) Choose sorting"
+                show_collection_stats_header
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    echo "Statistics Options:"
+                    echo "  1) Back to main menu"
+                    echo "  2) Show all files"
+                    echo "  3) Show by format"
+                    echo "  4) Choose sorting"
+                else
+                    echo "Collection Statistics Options:"
+                    echo "  1) Back to main menu"
+                    echo "  2) Show all files"
+                    echo "  3) Show by format"
+                    echo "  4) Choose sorting"
+                fi
                 echo
-                printf "Choose option (1-4): "
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "Choose option (1-4): "
+                else
+                    printf "Choose option (1-4): "
+                fi
                 read stats_choice
                 echo
                 
@@ -591,8 +654,6 @@ interactive_mode() {
                     1)
                         clear
                         show_ascii_title
-                        echo "Interactive Mode"
-                        echo "================"
                         echo
                         continue
                         ;;
@@ -612,8 +673,6 @@ interactive_mode() {
                             1) 
                                 clear
                                 show_ascii_title
-                                echo "Interactive Mode"
-                                echo "================"
                                 echo
                                 continue 2
                                 ;;
@@ -640,8 +699,6 @@ interactive_mode() {
                             1) 
                                 clear
                                 show_ascii_title
-                                echo "Interactive Mode"
-                                echo "================"
                                 echo
                                 continue 2
                                 ;;
@@ -663,40 +720,57 @@ interactive_mode() {
                     read
                     clear
                     show_ascii_title
-                    echo "Interactive Mode"
-                    echo "================"
                     echo
                 fi
                 ;;
             3)
+                show_synced_drives_header
                 list_users
                 echo
                 printf "Press Enter to continue..."
                 read
                 clear
                 show_ascii_title
-                echo "Interactive Mode"
-                echo "================"
                 echo
                 ;;
             4)
-                echo "Advanced Search Options:"
+                show_advanced_options_header
                 echo
-                echo "Current settings:"
-                echo "  Format filter: $format"
-                echo "  Drive filter: ${username:-none}"
-                echo "  Sort by: $sort_by"
-                echo "  Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    echo "Current Settings:"
+                    echo "  Format filter: $format"
+                    echo "  Drive filter: ${username:-none}"  
+                    echo "  Sort by: $sort_by"
+                    echo "  Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                    echo
+                    echo "Change Settings:"
+                    echo "  1) Back to main menu"
+                    echo "  2) Set format filter"
+                    echo "  3) Set drive filter"
+                    echo "  4) Set sort order"
+                    echo "  5) Toggle verbose mode"
+                    echo "  6) Reset to defaults"
+                else
+                    echo "Current settings:"
+                    echo "  Format filter: $format"
+                    echo "  Drive filter: ${username:-none}"
+                    echo "  Sort by: $sort_by"
+                    echo "  Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                    echo
+                    echo "Change settings:"
+                    echo "  1) Back to main menu"
+                    echo "  2) Set format filter"
+                    echo "  3) Set drive filter"
+                    echo "  4) Set sort order"
+                    echo "  5) Toggle verbose mode"
+                    echo "  6) Reset to defaults"
+                fi
                 echo
-                echo "Change settings:"
-                echo "  1) Back to main menu"
-                echo "  2) Set format filter"
-                echo "  3) Set drive filter"
-                echo "  4) Set sort order"
-                echo "  5) Toggle verbose mode"
-                echo "  6) Reset to defaults"
-                echo
-                printf "Choose option (1-6): "
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    printf "Choose option (1-6): "
+                else
+                    printf "Choose option (1-6): "
+                fi
                 read adv_choice
                 echo
                 
@@ -704,8 +778,6 @@ interactive_mode() {
                     1)
                         clear
                         show_ascii_title
-                        echo "Interactive Mode"
-                        echo "================"
                         echo
                         continue
                         ;;
@@ -722,8 +794,6 @@ interactive_mode() {
                             1) 
                                 clear
                                 show_ascii_title
-                                echo "Interactive Mode"
-                                echo "================"
                                 echo
                                 continue 2
                                 ;;
@@ -743,7 +813,10 @@ interactive_mode() {
                         local count=1
                         for user_data in "${USERS[@]}"; do
                             local user="${user_data%%:*}"
-                            printf "  %3d. %s\n" "$count" "$user"
+                            local color="${user_data##*:}"
+                            printf "  %3d. " "$count"
+                            color_text "$color" "$user"
+                            echo
                             ((count++))
                         done
                         echo
@@ -765,8 +838,6 @@ interactive_mode() {
                             1) 
                                 clear
                                 show_ascii_title
-                                echo "Interactive Mode"
-                                echo "================"
                                 echo
                                 continue 2
                                 ;;
@@ -799,13 +870,15 @@ interactive_mode() {
                     read
                     clear
                     show_ascii_title
-                    echo "Interactive Mode"
-                    echo "================"
                     echo
                 fi
                 ;;
             5)
-                echo "Goodbye!"
+                if [ "$HAS_COLORS" -eq 1 ]; then
+                    echo "Goodbye!"
+                else
+                    echo "Goodbye!"
+                fi
                 exit 0
                 ;;
             *)
@@ -815,8 +888,6 @@ interactive_mode() {
                 read
                 clear
                 show_ascii_title
-                echo "Interactive Mode"
-                echo "================"
                 echo
                 ;;
         esac
