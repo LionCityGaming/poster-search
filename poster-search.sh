@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.4.0"  # Major.Minor.Patch
+readonly VERSION="0.5.0"  # Major.Minor.Patch
 
 # Changelog:
+# v0.5.0 - Added interactive mode (-i flag) with menu-driven interface
+#        - Main menu with search, statistics, user listing, and advanced options
+#        - Advanced options submenu for configuring filters and settings
+#        - Collection statistics submenu with format and sorting options
+#        - Persistent settings within interactive session
+#        - Clear screen management and user-friendly navigation
+#        - Enhanced user experience with guided interface
 # v0.4.0 - Added disk usage information to file count display (-c flag)
 #        - New sort options: size-asc, size-desc for sorting by disk usage
 #        - Enhanced display format to show both file count and space used
@@ -91,12 +98,13 @@ show_help() {
     cat << EOF
 Poster Search Tool v${VERSION}
 
-Usage: $0 [-u username] [-s sort] [-f format] [-l] [-c] [-h] [search term]
+Usage: $0 [-u username] [-s sort] [-f format] [-l] [-c] [-i] [-h] [search term]
 
 Options:
     -h          Show this help text
     -l          List all users
     -c          Show file count and disk usage per user
+    -i          Interactive mode (menu-driven interface)
     -u user     Filter by username
     -f format   Filter by format: jpg, jpeg, png, or all (default: all)
     -s sort     Sort by: priority (default), username, filename, year-asc, year-desc
@@ -113,6 +121,7 @@ Examples:
     $0 -c -f jpg                # Show JPG file count and disk usage per user
     $0 -c -s count-desc         # Show file count per user, highest count first
     $0 -c -s size-desc          # Show file count per user, largest size first
+    $0 -i                       # Start interactive mode
 EOF
 }
 
@@ -412,6 +421,195 @@ search_files() {
     rm -f "$results_file"
 }
 
+# Interactive mode function
+interactive_mode() {
+    local username=""
+    local format="all"
+    local sort_by="priority"
+    local verbose=0
+    
+    clear
+    echo "Poster Search Tool v${VERSION} - Interactive Mode"
+    echo "================================================="
+    echo
+    
+    while true; do
+        echo "Main Menu:"
+        echo "  1) Search for posters"
+        echo "  2) Show collection statistics" 
+        echo "  3) List all users"
+        echo "  4) Advanced search options"
+        echo "  5) Exit"
+        echo
+        read -p "Choose an option (1-5): " choice
+        echo
+        
+        case $choice in
+            1)
+                read -p "Enter search term (or press Enter for all files): " search_term
+                echo
+                echo "Searching..."
+                search_files "$search_term" "$username" "$format" "$sort_by" "$verbose"
+                echo
+                read -p "Press Enter to continue..."
+                clear
+                ;;
+            2)
+                echo "Collection Statistics Options:"
+                echo "  1) Show all files"
+                echo "  2) Show by format"
+                echo "  3) Choose sorting"
+                echo
+                read -p "Choose option (1-3): " stats_choice
+                echo
+                
+                case $stats_choice in
+                    1)
+                        show_file_counts "all" "priority"
+                        ;;
+                    2)
+                        echo "Choose format:"
+                        echo "  1) JPG files only"
+                        echo "  2) JPEG files only" 
+                        echo "  3) PNG files only"
+                        echo "  4) All formats"
+                        read -p "Choose format (1-4): " format_choice
+                        case $format_choice in
+                            1) show_file_counts "jpg" "priority" ;;
+                            2) show_file_counts "jpeg" "priority" ;;
+                            3) show_file_counts "png" "priority" ;;
+                            *) show_file_counts "all" "priority" ;;
+                        esac
+                        ;;
+                    3)
+                        echo "Sort by:"
+                        echo "  1) User priority (default)"
+                        echo "  2) Username alphabetically"
+                        echo "  3) File count (highest first)"
+                        echo "  4) File count (lowest first)"
+                        echo "  5) Disk usage (largest first)"
+                        echo "  6) Disk usage (smallest first)"
+                        read -p "Choose sort option (1-6): " sort_choice
+                        local stats_sort="priority"
+                        case $sort_choice in
+                            2) stats_sort="username" ;;
+                            3) stats_sort="count-desc" ;;
+                            4) stats_sort="count-asc" ;;
+                            5) stats_sort="size-desc" ;;
+                            6) stats_sort="size-asc" ;;
+                        esac
+                        show_file_counts "$format" "$stats_sort"
+                        ;;
+                esac
+                echo
+                read -p "Press Enter to continue..."
+                clear
+                ;;
+            3)
+                list_users
+                echo
+                read -p "Press Enter to continue..."
+                clear
+                ;;
+            4)
+                echo "Advanced Search Options:"
+                echo
+                echo "Current settings:"
+                echo "  Format filter: $format"
+                echo "  User filter: ${username:-none}"
+                echo "  Sort by: $sort_by"
+                echo "  Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                echo
+                echo "Change settings:"
+                echo "  1) Set format filter"
+                echo "  2) Set user filter"
+                echo "  3) Set sort order"
+                echo "  4) Toggle verbose mode"
+                echo "  5) Reset to defaults"
+                echo "  6) Back to main menu"
+                echo
+                read -p "Choose option (1-6): " adv_choice
+                echo
+                
+                case $adv_choice in
+                    1)
+                        echo "Choose format:"
+                        echo "  1) All formats"
+                        echo "  2) JPG only"
+                        echo "  3) JPEG only"
+                        echo "  4) PNG only"
+                        read -p "Choose format (1-4): " fmt_choice
+                        case $fmt_choice in
+                            2) format="jpg" ;;
+                            3) format="jpeg" ;;
+                            4) format="png" ;;
+                            *) format="all" ;;
+                        esac
+                        echo "Format set to: $format"
+                        ;;
+                    2)
+                        echo "Available users:"
+                        local count=1
+                        for user_data in "${USERS[@]}"; do
+                            local user="${user_data%%:*}"
+                            printf "%3d. %s\n" "$count" "$user"
+                            ((count++))
+                        done
+                        echo
+                        read -p "Enter username (or press Enter to clear filter): " username
+                        echo "User filter set to: ${username:-none}"
+                        ;;
+                    3)
+                        echo "Sort options:"
+                        echo "  1) User priority (default)"
+                        echo "  2) Username alphabetically"
+                        echo "  3) Filename alphabetically"
+                        echo "  4) Year (newest first)"
+                        echo "  5) Year (oldest first)"
+                        read -p "Choose sort option (1-5): " sort_choice
+                        case $sort_choice in
+                            2) sort_by="username" ;;
+                            3) sort_by="filename" ;;
+                            4) sort_by="year-desc" ;;
+                            5) sort_by="year-asc" ;;
+                            *) sort_by="priority" ;;
+                        esac
+                        echo "Sort order set to: $sort_by"
+                        ;;
+                    4)
+                        verbose=$((1 - verbose))
+                        echo "Verbose mode: $([ $verbose -eq 1 ] && echo "enabled" || echo "disabled")"
+                        ;;
+                    5)
+                        username=""
+                        format="all"
+                        sort_by="priority"
+                        verbose=0
+                        echo "Settings reset to defaults"
+                        ;;
+                    6)
+                        clear
+                        continue
+                        ;;
+                esac
+                echo
+                read -p "Press Enter to continue..."
+                clear
+                ;;
+            5)
+                echo "Goodbye!"
+                exit 0
+                ;;
+            *)
+                echo "Invalid option. Please choose 1-5."
+                echo
+                read -p "Press Enter to continue..."
+                clear
+                ;;
+        esac
+    done
+}
+
 # ============================================================================
 # Main Script
 # ============================================================================
@@ -422,13 +620,15 @@ main() {
     local sort_by="priority"
     local verbose=0
     local show_counts=0
+    local interactive=0
 
     # Parse options
-    while getopts "hu:f:s:lvdc" opt; do
+    while getopts "hu:f:s:lvdci" opt; do
         case $opt in
             h) show_help; exit 0 ;;
             l) list_users; exit 0 ;;
             c) show_counts=1 ;;
+            i) interactive=1 ;;
             u) username="$OPTARG" ;;
             f) case "$OPTARG" in
                    jpg|jpeg|png|all) format="$OPTARG" ;;
@@ -455,6 +655,12 @@ main() {
     else
         HAS_COLORS=0
         [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output disabled" >&2
+    fi
+
+    # Handle interactive mode
+    if [ "$interactive" -eq 1 ]; then
+        interactive_mode
+        exit 0
     fi
 
     # Handle file count display
