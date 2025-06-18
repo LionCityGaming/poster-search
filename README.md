@@ -10,7 +10,8 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - Format-specific filtering
 - **Collection overview with file count and disk usage per user**
 - **Advanced sorting options for collection statistics including disk usage**
-- **Interactive menu-driven interface for easy navigation**
+- **Enhanced interactive menu system with consistent navigation patterns**
+- **Improved user experience with intuitive menu flow and visual feedback**
 - **External configuration file support for portability**
 - Adaptive color-coded output with terminal compatibility
 - Automatic terminal capability detection
@@ -27,7 +28,9 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 - Sort results by various criteria including custom priority order
 - **Sort collection statistics by file count, disk usage, username, or priority**
 - **Human-readable size formatting (B, KB, MB, GB, TB)**
-- **Interactive mode with menu-driven interface for enhanced user experience**
+- **Enhanced interactive mode with streamlined menu navigation**
+- **Consistent navigation patterns - option 1 always returns to main menu**
+- **Improved menu flow with clear visual feedback and status indicators**
 - **External configuration support via poster-search.env file**
 - **Configuration persistence across script updates**
 - Smart color-coded output with terminal compatibility detection
@@ -40,7 +43,25 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 
 ## Version History
 
-**Current Version:** 0.6.0
+**Current Version:** 0.7.0
+
+### Major Changes in 0.7.0:
+- **🎯 Enhanced Interactive Menu System**: Completely redesigned user interface with consistent navigation patterns
+- **🔄 Streamlined Navigation Flow**: Option 1 always returns to main menu across all submenus for intuitive navigation
+- **✨ Improved User Experience**: Added visual feedback, status indicators, and clear menu transitions
+- **🏠 Consistent Menu Structure**: Standardized all submenus with predictable navigation options
+- **🎨 Enhanced Visual Design**: Better spacing, clearer prompts, and improved menu organization
+- **⚡ Optimized Menu Performance**: Faster transitions and more responsive interactive experience
+- **🔧 Better Error Handling**: Improved input validation and user feedback in interactive mode
+- **📱 Mobile-Friendly Interface**: Better display formatting for various terminal sizes
+
+### Key Interactive Mode Improvements:
+- **Main Menu Redesign**: Cleaner layout with better option organization
+- **Submenu Consistency**: All submenus now follow the same navigation pattern
+- **Visual Feedback**: Clear indicators for current settings and actions
+- **Navigation Standards**: Option 1 universally means "back to main menu"
+- **Session Management**: Better handling of user preferences within sessions
+- **Error Recovery**: Improved handling of invalid inputs with helpful guidance
 
 Changes in 0.6.0:
 - **Added external poster-search.env configuration file support**
@@ -183,18 +204,28 @@ The color system automatically detects your terminal's capabilities and provides
 
 ## Usage
 
-### Interactive Mode
+### Interactive Mode (Recommended)
 ```bash
-# Start interactive mode with menu-driven interface
+# Start enhanced interactive mode with improved menu system
 ./poster-search.sh -i
 ```
 
-Interactive mode features:
-- **Main Menu**: Search, statistics, user listing, advanced options, and exit
-- **Collection Statistics Menu**: View file counts and disk usage with format and sorting options
-- **Advanced Options Menu**: Configure search filters, sorting, and display settings
-- **Persistent Settings**: All configured options remain active within the session
-- **User-Friendly Navigation**: Clear prompts and menu-driven interface
+### Interactive Mode Features (v0.7.0):
+- **🎯 Main Menu**: Streamlined access to search, statistics, user listing, advanced options, and exit
+- **📊 Collection Statistics Menu**: Enhanced interface for viewing file counts and disk usage with format and sorting options
+- **⚙️ Advanced Options Menu**: Improved configuration interface for search filters, sorting, and display settings
+- **🔄 Consistent Navigation**: Option 1 always returns to main menu across all interfaces
+- **✨ Visual Feedback**: Clear status indicators and setting confirmations
+- **🏠 Intuitive Flow**: Predictable menu structure with logical option grouping
+- **⚡ Responsive Design**: Optimized for both small and large terminal windows
+- **🎨 Enhanced Display**: Better use of colors and spacing for improved readability
+
+### Interactive Mode Navigation:
+- **Main Menu**: Choose from 5 primary options
+- **All Submenus**: Option 1 consistently returns to main menu
+- **Settings Persistence**: All configured options remain active within the session
+- **Clear Feedback**: Visual confirmations for all setting changes
+- **Error Handling**: Helpful guidance for invalid inputs
 
 ### Basic Search
 ```bash
@@ -288,7 +319,7 @@ Total Count: 8456 files [3.2 GB]
 ```bash
 ./poster-search.sh -u username -f png -s priority searchterm
 ./poster-search.sh -c -f jpg -s size-desc  # Show JPG counts and disk usage, largest first
-./poster-search.sh -i                      # Start interactive mode for guided interface
+./poster-search.sh -i                      # Start enhanced interactive mode for guided interface
 ```
 
 ### Debug and Verbose Output
@@ -311,7 +342,7 @@ Total Count: 8456 files [3.2 GB]
 | -h | Show help text |
 | -l | List all synced drives |
 | **-c** | **Show file count and disk usage per user (collection statistics)** |
-| **-i** | **Interactive mode with menu-driven interface** |
+| **-i** | **Enhanced interactive mode with improved menu-driven interface** |
 | -u username | Filter results by username (case insensitive, partial match) |
 | -f format | Filter by file format (jpg, jpeg, png, or all) |
 | **-s sort_option** | **Sort results - Search: (priority, username, filename, year-asc, year-desc) / Count: (priority, username, count-asc, count-desc, size-asc, size-desc)** |
@@ -359,8 +390,8 @@ The enhanced file count and disk usage feature provides valuable insights for co
 ./poster-search.sh -c -s size-asc
 ```
 
-Use cases:
-- `./poster-search.sh -i` - Start interactive mode for guided navigation
+### Recommended Usage Patterns:
+- `./poster-search.sh -i` - **Start enhanced interactive mode for best user experience**
 - `./poster-search.sh -c` - Get overall collection statistics with disk usage
 - `./poster-search.sh -c -f jpg -s size-desc` - See top JPG contributors by disk usage
 - `./poster-search.sh -c -s count-asc` - Identify users who might need more content
@@ -374,6 +405,7 @@ The script has been optimized for performance when calculating disk usage:
 - Single-pass directory traversal for both counting and size calculation
 - Handles large collections (50,000+ files) efficiently
 - Supports collections ranging from GB to TB in size
+- **Enhanced interactive mode performance with faster menu transitions**
 
 ## Directory Structure
 
@@ -420,4 +452,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Users who contributed to feature requests and testing
 - Inspiration from similar image organization tools
-- DAPS community for feedback and testing
+- DAPS community for feedback and testing on the enhanced interactive interface
