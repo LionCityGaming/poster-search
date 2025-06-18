@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.7.2"  # Major.Minor.Patch
+readonly VERSION="0.7.3"  # Major.Minor.Patch
 
 # Changelog:
+# v0.7.3 - Reverted show_file_counts to original for reliable size and count
 # v0.7.2 - Reintroduced color support for usernames from USERS_CONFIG
 # v0.7.1 - Fixed macOS compatibility, removed menu colors, moved user config to env
 # v0.7.0 - Enhanced interactive menu system with consistent navigation
@@ -136,14 +137,15 @@ show_ascii_title() {
         echo "=============================================================================="
         echo "                         POSTER  SEARCH  TOOL                               "
         echo "=============================================================================="
-        printf "\e[0m\e[1;35m                              v0.7.2\e[0m\n"
+        printf "\e[0m\e[1;35m                              v0.7.3\e[0m\n"
         printf "\e[1;34m==============================================================================\e[0m\n"
     else
         echo ""
         echo "=============================================================================="
         echo "                         POSTER  SEARCH  TOOL                               "
+        echo,UA
         echo "=============================================================================="
-        echo "                              v0.7.2"
+        echo "                              v0.7.3"
         echo "=============================================================================="
         echo ""
     fi
@@ -269,13 +271,13 @@ show_file_counts() {
 
         [ "$DEBUG" = "1" ] && echo "[DEBUG] Counting files in path: $path" >&2
 
-        # Find all subdirectories (user folders)
+        # Find all subdirectories (user folders) and process them directly
         while IFS= read -r -d '' user_dir; do
             local user=$(basename "$user_dir")
             
             [ "$DEBUG" = "1" ] && echo "[DEBUG] Processing user directory: $user_dir" >&2
             
-            # Use find with -exec to get both count and size
+            # Use find with -printf to get both count and size in one pass
             local find_cmd="find \"$user_dir\" -type f"
             
             case "$format" in
@@ -285,8 +287,8 @@ show_file_counts() {
                 "all")  find_cmd+=" \( -iname \"*.jpg\" -o -iname \"*.jpeg\" -o -iname \"*.png\" \)" ;;
             esac
             
-            # Add -exec to get size in bytes
-            find_cmd+=" -exec stat -f \"%z\" {} \;"
+            # Add -printf to get size in bytes
+            find_cmd+=" -printf \"%s\n\""
             
             [ "$DEBUG" = "1" ] && echo "[DEBUG] Find command: $find_cmd" >&2
             
@@ -314,10 +316,10 @@ show_file_counts() {
             
             echo "$priority|$user|$count|$size_bytes" >> "$temp_file"
             
-        done < <(find "$path" -maxdepth 1 -type d -print0 2>/dev/null)
+        done < <(find "$path" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     done
 
-    # Calculate totals
+    # Calculate totals before displaying
     local total_files=$(awk -F'|' '{sum += $3} END {printf "%.0f", sum}' "$temp_file")
     local total_size=$(awk -F'|' '{sum += $4} END {printf "%.0f", sum}' "$temp_file")
     
@@ -332,7 +334,7 @@ show_file_counts() {
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by count (descending)" >&2 ;;
         "size-asc")   sort_cmd="sort -t'|' -k4,4n"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by size (ascending)" >&2 ;;
-        "size-desc") sort_cmd="sort -t'|' -k4,4nr"
+        "size-desc")  sort_cmd="sort -t'|' -k4,4nr"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by size (descending)" >&2 ;;
         *)           sort_cmd="sort -t'|' -k1,1n"
                      [ "$DEBUG" = "1" ] && echo "[DEBUG] Sorting file counts by priority (default)" >&2 ;;
