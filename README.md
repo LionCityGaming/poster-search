@@ -65,7 +65,7 @@ nano poster-search.env  # Edit paths and users
   1️⃣  🔍 Search for posters
   2️⃣  📊 Show collection statistics  
   3️⃣  👥 List all synced drives
-  4️⃣  ⚙️  Advanced search options
+  4️⃣  ⚙️ Advanced search options
   5️⃣  🚪 Exit
 
 💫 Choose an option (1-5): _
