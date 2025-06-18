@@ -276,7 +276,7 @@ show_file_counts() {
     done
     
     echo "==================================="
-    printf "Total Count: %s files [%s]\n" "$total_files" "$(format_bytes "$total_size")"
+    printf "%-15s   %5s files   [%s]\n" "Total Count:" "$total_files" "$(format_bytes "$total_size")"
     if [ "$format" != "all" ]; then
         printf "(Only %s files counted)\n" "$format"
     fi
