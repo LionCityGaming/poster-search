@@ -50,12 +50,64 @@ nano poster-search.env  # Edit paths and users
 ```bash
 ./poster-search.sh -i
 ```
-Features an intuitive menu system with:
-- Main menu with 5 primary options
+
+**Main Menu Example:**
+```
+==============================================================================
+                         POSTER  SEARCH  TOOL                               
+==============================================================================
+                              v0.7.5
+==============================================================================
+Interactive Mode
+================
+
+Main Menu:
+  1) Search for posters
+  2) Show collection statistics
+  3) List all synced drives
+  4) Advanced search options
+  5) Exit
+
+Choose an option (1-5): _
+```
+
+**Collection Statistics Submenu:**
+```
+Collection Statistics Options:
+  1) Back to main menu
+  2) Show all files
+  3) Show by format
+  4) Choose sorting
+
+Choose option (1-4): _
+```
+
+**Advanced Options Submenu:**
+```
+Advanced Search Options:
+
+Current settings:
+  Format filter: all
+  Drive filter: none
+  Sort by: priority
+  Verbose mode: disabled
+
+Change settings:
+  1) Back to main menu
+  2) Set format filter
+  3) Set drive filter
+  4) Set sort order
+  5) Toggle verbose mode
+  6) Reset to defaults
+
+Choose option (1-6): _
+```
+
+Features:
 - Consistent navigation (option 1 always returns to main menu)
-- Collection statistics with sorting options
-- Advanced search configuration
 - Visual feedback and status indicators
+- Settings persistence within session
+- Intuitive menu flow with clear options
 
 ### Command Line Usage
 ```bash
