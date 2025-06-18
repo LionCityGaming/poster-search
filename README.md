@@ -8,8 +8,8 @@ This script enhances the poster browsing capabilities for DAPS users by providin
 - Quick searching through user-synchronized poster directories
 - Priority-based sorting of trusted users' contributions
 - Format-specific filtering
-- Collection overview with file count per user
-- **Advanced sorting options for collection statistics**
+- **Collection overview with file count and disk usage per user**
+- **Advanced sorting options for collection statistics including disk usage**
 - Adaptive color-coded output with terminal compatibility
 - Automatic terminal capability detection
 
@@ -20,21 +20,31 @@ For information about setting up DAPS and DAPS-UI, please refer to:
 ## Features
 
 - Search for images by filename across multiple user directories
-- **View file count statistics per user with flexible sorting options**
+- **View file count and disk usage statistics per user with flexible sorting options**
 - Filter results by file format (JPG, JPEG, PNG)
 - Sort results by various criteria including custom priority order
-- **Sort collection statistics by file count, username, or priority**
+- **Sort collection statistics by file count, disk usage, username, or priority**
+- **Human-readable size formatting (B, KB, MB, GB, TB)**
 - Smart color-coded output with terminal compatibility detection
 - Advanced and basic color support with automatic fallback
 - User-specific filtering
 - Support for JPG, JPEG, and PNG files
 - Multiple search paths support
 - Enhanced search performance
-- **Total collection statistics with format-specific breakdowns**
+- **Total collection statistics with format-specific breakdowns and total disk usage**
 
 ## Version History
 
-**Current Version:** 0.3.1
+**Current Version:** 0.4.0
+
+Changes in 0.4.0:
+- **Added disk usage information to file count display (-c flag)**
+- **New sort options: size-asc, size-desc for sorting by disk usage**
+- **Enhanced display format to show both file count and space used**
+- **Added human-readable size formatting (B, KB, MB, GB, TB)**
+- **Optimized file size calculation using find -printf for dramatically improved performance**
+- **Fixed scientific notation handling for very large collections**
+- **Enhanced total statistics display with both file count and disk usage**
 
 Changes in 0.3.1:
 - **Fixed total file count calculation** (was showing 0 due to subshell variable scoping issue)
@@ -101,7 +111,7 @@ The script now uses an enhanced configuration system with support for both advan
 ```bash
 # Search paths - Add or modify paths as needed
 declare -a SEARCH_PATHS=(
-    "/volume2/docker/dockge/stacks/daps/posters"    # Main DAPS posters directory
+    "/etc/komodo/stacks/daps-ui/daps-ui/posters"    # Main DAPS posters directory
     # Add additional paths here
 )
 
@@ -125,36 +135,42 @@ The color system automatically detects your terminal's capabilities and provides
 ./poster-search.sh [search_term]
 ```
 
-### Collection Statistics
+### Collection Statistics with Disk Usage
 ```bash
-# Show file count for all users (sorted by priority - default)
+# Show file count and disk usage for all users (sorted by priority - default)
 ./poster-search.sh -c
 
-# Show file count sorted by highest count first
+# Show file count and disk usage sorted by highest count first
 ./poster-search.sh -c -s count-desc
 
-# Show file count sorted by lowest count first
+# Show file count and disk usage sorted by largest disk usage first
+./poster-search.sh -c -s size-desc
+
+# Show file count and disk usage sorted by smallest disk usage first
+./poster-search.sh -c -s size-asc
+
+# Show file count and disk usage sorted by lowest count first
 ./poster-search.sh -c -s count-asc
 
-# Show file count sorted alphabetically by username
+# Show file count and disk usage sorted alphabetically by username
 ./poster-search.sh -c -s username
 
-# Show file count for specific format with sorting
-./poster-search.sh -c -f jpg -s count-desc
-./poster-search.sh -c -f png -s username
+# Show file count and disk usage for specific format with sorting
+./poster-search.sh -c -f jpg -s size-desc
+./poster-search.sh -c -f png -s count-desc
 ```
 
 Example output:
 ```
-File count per user:
-====================
-LionCityGaming     1,234 files
-IamSpartacus         892 files
-Drazzilb             567 files
-BZ                   445 files
+File count and disk usage per user:
+===================================
+LionCityGaming     1234 files   [1.2 GB]
+IamSpartacus        892 files   [856.3 MB]
+Drazzilb            567 files   [445.7 MB]
+BZ                  445 files   [298.1 MB]
 ...
-====================
-Total files: 8,456
+===================================
+Total Count: 8456 files [3.2 GB]
 ```
 
 ### List All Users
@@ -198,12 +214,14 @@ Total files: 8,456
 ./poster-search.sh -c -s username      # Sort alphabetically by username
 ./poster-search.sh -c -s count-asc     # Sort by file count, lowest first
 ./poster-search.sh -c -s count-desc    # Sort by file count, highest first
+./poster-search.sh -c -s size-asc      # Sort by disk usage, smallest first
+./poster-search.sh -c -s size-desc     # Sort by disk usage, largest first
 ```
 
 ### Combining Options
 ```bash
 ./poster-search.sh -u username -f png -s priority searchterm
-./poster-search.sh -c -f jpg -s count-desc  # Show JPG counts, highest first
+./poster-search.sh -c -f jpg -s size-desc  # Show JPG counts and disk usage, largest first
 ```
 
 ### Debug and Verbose Output
@@ -216,7 +234,7 @@ Total files: 8,456
 
 # Can be combined with other options
 ./poster-search.sh -v -u username -f png searchterm
-./poster-search.sh -d -c -s count-desc
+./poster-search.sh -d -c -s size-desc
 ```
 
 ## Command Line Options
@@ -225,10 +243,10 @@ Total files: 8,456
 |--------|-------------|
 | -h | Show help text |
 | -l | List all synced drives |
-| **-c** | **Show file count per user (collection statistics)** |
+| **-c** | **Show file count and disk usage per user (collection statistics)** |
 | -u username | Filter results by username (case insensitive, partial match) |
 | -f format | Filter by file format (jpg, jpeg, png, or all) |
-| **-s sort_option** | **Sort results - Search: (priority, username, filename, year-asc, year-desc) / Count: (priority, username, count-asc, count-desc)** |
+| **-s sort_option** | **Sort results - Search: (priority, username, filename, year-asc, year-desc) / Count: (priority, username, count-asc, count-desc, size-asc, size-desc)** |
 | -v | Enable verbose output (shows additional processing information) |
 | -d | Enable debug mode (shows additional debugging information) |
 
@@ -243,39 +261,56 @@ This ensures optimal visibility and compatibility across different terminal emul
 
 ## Collection Management
 
-The enhanced file count feature provides valuable insights for collection management:
+The enhanced file count and disk usage feature provides valuable insights for collection management:
 
-- **Quick overview**: See which users contribute the most content
-- **Format analysis**: Identify format distribution across your collection
-- **Storage planning**: Understand collection size for backup and storage decisions
-- **User activity**: Monitor active contributors to your poster collection
+- **Quick overview**: See which users contribute the most content and use the most disk space
+- **Format analysis**: Identify format distribution and storage usage across your collection
+- **Storage planning**: Understand collection size for backup and storage decisions with precise disk usage information
+- **User activity**: Monitor active contributors to your poster collection and their storage impact
 - **Performance analysis**: Identify users with the largest collections for optimization
+- **Storage optimization**: Find users with high file counts but low disk usage (smaller files) or vice versa
 
 ### Advanced Collection Analysis Examples:
 ```bash
 # Find users with the most content
 ./poster-search.sh -c -s count-desc
 
-# Analyze PNG distribution
-./poster-search.sh -c -f png -s count-desc
+# Find users using the most disk space
+./poster-search.sh -c -s size-desc
 
-# Get alphabetical user overview
+# Analyze PNG distribution and disk usage
+./poster-search.sh -c -f png -s size-desc
+
+# Get alphabetical user overview with disk usage
 ./poster-search.sh -c -s username
 
 # Find users with minimal collections
 ./poster-search.sh -c -s count-asc
+
+# Find users with smallest disk footprint
+./poster-search.sh -c -s size-asc
 ```
 
 Use cases:
-- `./poster-search.sh -c` - Get overall collection statistics
-- `./poster-search.sh -c -f jpg -s count-desc` - See top JPG contributors
+- `./poster-search.sh -c` - Get overall collection statistics with disk usage
+- `./poster-search.sh -c -f jpg -s size-desc` - See top JPG contributors by disk usage
 - `./poster-search.sh -c -s count-asc` - Identify users who might need more content
+- `./poster-search.sh -c -s size-desc` - Identify users consuming the most storage space
+- `./poster-search.sh -c -f png -s count-desc` - Find users with the most PNG files
+
+## Performance
+
+The script has been optimized for performance when calculating disk usage:
+- Uses `find -printf` for efficient file size collection
+- Single-pass directory traversal for both counting and size calculation
+- Handles large collections (50,000+ files) efficiently
+- Supports collections ranging from GB to TB in size
 
 ## Directory Structure
 
 The script is designed to work with DAPS directory structure and expects images to be organized in the following way:
 ```
-/volume2/docker/dockge/stacks/daps/posters/  # Default DAPS posters directory
+/etc/komodo/stacks/daps-ui/daps-ui/posters/  # Default DAPS posters directory
 ├── user1/                                   # DAPS sync username
 │   ├── image1.jpg
 │   └── image2.png
