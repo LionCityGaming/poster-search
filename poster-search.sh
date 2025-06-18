@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
 # Version information
-readonly VERSION="0.5.0"  # Major.Minor.Patch
+readonly VERSION="0.6.0"  # Major.Minor.Patch
 
 # Changelog:
+# v0.6.0 - Added external poster-search.env configuration file support
+#        - Automatic poster-search.env.example file creation for easy setup
+#        - Configuration persistence across script updates
+#        - User-defined poster paths and user configurations
+#        - Safe configuration parsing with fallback to built-in defaults
+#        - Enhanced portability and maintainability
 # v0.5.0 - Added interactive mode (-i flag) with menu-driven interface
 #        - Main menu with search, statistics, user listing, and advanced options
 #        - Advanced options submenu for configuring filters and settings
@@ -31,19 +37,108 @@ readonly VERSION="0.5.0"  # Major.Minor.Patch
 # User Configuration
 # ============================================================================
 
-# Check if terminal supports colors
-if command -v tput >/dev/null 2>&1 && [ -t 1 ]; then
-    HAS_COLORS=1
-    [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output enabled" >&2
-else
-    HAS_COLORS=0
-    [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output disabled" >&2
-fi
+# Load configuration from poster-search.env file if it exists
+load_config() {
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local env_file="$script_dir/poster-search.env"
+    
+    if [ -f "$env_file" ]; then
+        [ "$DEBUG" = "1" ] && echo "[DEBUG] Loading configuration from: $env_file" >&2
+        
+        # Source the poster-search.env file safely
+        while IFS= read -r line; do
+            # Skip empty lines and comments
+            [[ "$line" =~ ^[[:space:]]*$ ]] && continue
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            
+            # Process valid configuration lines
+            if [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*=[[:space:]]*(.*) ]]; then
+                local var_name="${BASH_REMATCH[1]}"
+                local var_value="${BASH_REMATCH[2]}"
+                
+                # Remove surrounding quotes if present
+                var_value=$(echo "$var_value" | sed -e 's/^["'\'']//' -e 's/["'\'']$//')
+                
+                [ "$DEBUG" = "1" ] && echo "[DEBUG] Setting $var_name=$var_value" >&2
+                
+                case "$var_name" in
+                    "POSTER_PATHS")
+                        # Parse comma-separated paths
+                        IFS=',' read -ra SEARCH_PATHS <<< "$var_value"
+                        # Trim whitespace from each path
+                        for i in "${!SEARCH_PATHS[@]}"; do
+                            SEARCH_PATHS[$i]=$(echo "${SEARCH_PATHS[$i]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                        done
+                        ;;
+                    "USERS_CONFIG")
+                        # Parse comma-separated user:color pairs
+                        IFS=',' read -ra USERS <<< "$var_value"
+                        # Trim whitespace from each user entry
+                        for i in "${!USERS[@]}"; do
+                            USERS[$i]=$(echo "${USERS[$i]}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+                        done
+                        ;;
+                esac
+            fi
+        done < "$env_file"
+        
+        [ "$DEBUG" = "1" ] && {
+            echo "[DEBUG] Loaded ${#SEARCH_PATHS[@]} search paths:" >&2
+            for path in "${SEARCH_PATHS[@]}"; do
+                echo "[DEBUG]   - $path" >&2
+            done
+            echo "[DEBUG] Loaded ${#USERS[@]} users" >&2
+        }
+    else
+        [ "$DEBUG" = "1" ] && echo "[DEBUG] No poster-search.env file found at: $env_file, using defaults" >&2
+        
+        # Create example poster-search.env file
+        create_example_env "$script_dir"
+    fi
+}
 
+# Create an example poster-search.env file
+create_example_env() {
+    local script_dir="$1"
+    local example_file="$script_dir/poster-search.env.example"
+    
+    if [ ! -f "$example_file" ]; then
+        [ "$DEBUG" = "1" ] && echo "[DEBUG] Creating example poster-search.env file at: $example_file" >&2
+        
+        cat > "$example_file" << 'EOF'
+# Poster Search Configuration
+# Copy this file to poster-search.env and modify as needed
+
+# Poster directory paths (comma-separated)
+# Add or modify paths where your poster images are stored
+POSTER_PATHS="/etc/komodo/stacks/daps-ui/daps-ui/posters,/path/to/additional/posters"
+
+# User configuration (comma-separated user:color pairs)
+# Format: username:color_code
+# Color codes are ANSI color codes (e.g., 1;31 for light red, 0;32 for dark green)
+USERS_CONFIG="LionCityGaming:1;31,IamSpartacus:1;32,Drazzilb:1;34,Darkkazul:1;35,dsaq:1;33,solen:1;36,BZ:0;31,chrisdc:0;32,Quafley:0;33,sahara:0;34,MajorGiant:0;35,Stupifier:0;36,Overbook874:91,Mareau:92,Jpalenz77:93,TokenMinal:94,MiniMyself:95,zarox:96,dweagle79:1;91,reitenth:1;92,wesisinmood:1;93,Kalyanrajnish:1;94"
+
+# Examples of ANSI color codes:
+# 0;30 = Dark Black    1;30 = Light Black (Gray)
+# 0;31 = Dark Red      1;31 = Light Red
+# 0;32 = Dark Green    1;32 = Light Green
+# 0;33 = Dark Yellow   1;33 = Light Yellow
+# 0;34 = Dark Blue     1;34 = Light Blue
+# 0;35 = Dark Magenta  1;35 = Light Magenta
+# 0;36 = Dark Cyan     1;36 = Light Cyan
+# 0;37 = Dark White    1;37 = Light White
+# 91-97 = Bright colors (91=bright red, 92=bright green, etc.)
+EOF
+        echo "Example configuration created at: $example_file"
+        echo "Copy it to poster-search.env and modify as needed:"
+        echo "  cp $example_file ${script_dir}/poster-search.env"
+    fi
+}
+
+# Default configuration (fallback if no .env file exists)
 # Search paths - Add or modify paths as needed
 declare -a SEARCH_PATHS=(
     "/etc/komodo/stacks/daps-ui/daps-ui/posters"    # Main DAPS posters directory
-    # Add additional paths here
 )
 
 # User priority and color mapping (in order of priority)
@@ -71,6 +166,18 @@ declare -a USERS=(
     "wesisinmood:1;93"     # Bright Light Yellow
     "Kalyanrajnish:1;94"   # Bright Light Blue
 )
+
+# Load external configuration
+load_config
+
+# Check if terminal supports colors
+if command -v tput >/dev/null 2>&1 && [ -t 1 ]; then
+    HAS_COLORS=1
+    [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output enabled" >&2
+else
+    HAS_COLORS=0
+    [ "$DEBUG" = "1" ] && echo "[DEBUG] Color output disabled" >&2
+fi
 
 # Color handling functions
 color_text() {
